@@ -1,3 +1,9 @@
+**Still TODO**
+- [ ] Package up with webpack
+- [ ] CI
+- [ ] Unit tests
+- [ ] Find somewhere besides https://stackblitz.com/edit/mobx-form-state for the example to live
+
 # mobx-form-state
 
 Ridiculously simple form state management with mobx.
