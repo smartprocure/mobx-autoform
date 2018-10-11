@@ -1,0 +1,37 @@
+{
+  "name": "mobx-form-state",
+  "version": "0.0.1",
+  "description": "Ridiculously simple form state management with mobx",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/smartprocure/mobx-form-state.git"
+  },
+  "keywords": [
+    "mobx",
+    "form",
+    "mobx-form"
+  ],
+  "author": {
+    "name": "Samuel Greene",
+    "email": "sgreene@smartprocure.us"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/smartprocure/mobx-form-state/issues"
+  },
+  "homepage": "https://github.com/smartprocure/mobx-form-state#readme",
+  "devDependencies": {
+    "futil": "^1.55.0",
+    "lodash": "^4.17.11",
+    "mobx": "^5.5.0"
+  },
+  "peerDependencies": {
+    "futil": "^1.55.0",
+    "lodash": "^4.17.11",
+    "mobx": "^5.5.0"
+  }
+}
