@@ -1,10 +1,4 @@
-**Still TODO**
-- [ ] Package up with webpack
-- [ ] CI
-- [ ] Unit tests
-- [ ] Find somewhere besides https://stackblitz.com/edit/mobx-form-state for the example to live
-
-# mobx-form-state
+# mobx-autoform
 
 Ridiculously simple form state management with mobx.
 
@@ -13,8 +7,11 @@ The general idea is to standardize a structure for observables and computeds tha
 
 # Quick Start Usage
 
+https://stackblitz.com/edit/mobx-autoform
+
+
 ```js
-import Form from 'mobx-form-state'
+import Form from 'mobx-autoform'
 import {reaction} from 'mobx'
 
 let form = Form({
@@ -102,8 +99,8 @@ We've looked at just about every single form management package for mobx and rea
 You can use any validation package, but validatorjs support is provided out of the box:
 
 ```js
-import Form from 'mobx-form-state'
-import {validatorJS} from 'mobx-form-state/validators'
+import Form from 'mobx-autoform'
+import {validatorJS} from 'mobx-autoform/validators'
 import V from 'validatorjs'
 
 let form = Form({
@@ -127,14 +124,14 @@ You can also combine validation strategies with `F.mergeOver`:
 
 ```js
 import {mergeOver} from 'futil'
-import {validatorJS, functions} from 'mobx-form-state/validators'
+import {validatorJS, functions} from 'mobx-autoform/validators'
 //...
   validate: mergeOver([validatorJS(V), functions])
 //...
 ```
 
 ## Usage with React
-`mobx-form-state` pairs well with mobx-react. We recommend authoring wrapper components that take fields as props, and leveraging `futil`'s  `domLens` functions, but keep in mind that you don't _have_ to:
+`mobx-autoform` pairs well with mobx-react. We recommend authoring wrapper components that take fields as props, and leveraging `futil`'s  `domLens` functions, but keep in mind that you don't _have_ to:
 
 ```js
 import React from 'react'
@@ -148,7 +145,7 @@ export let Input = observer(({ field }) =>
     // onChange: e => { field.value = e.target.value},
     // value: field.value,
     
-	// mobx-form-state isn't opinionated on what to track - put whatever you want on it!
+	// mobx-autoform isn't opinionated on what to track - put whatever you want on it!
     ...F.domLens.focus('focusing', field),
 
 	// A common pattern is to pass along props from field config

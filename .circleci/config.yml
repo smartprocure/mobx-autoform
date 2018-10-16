@@ -29,7 +29,7 @@ jobs:
           command: npm run danger
           when: always
       - deploy:
-          name: Maybe Deploy mobx-form-state
+          name: Maybe Deploy mobx-autoform
           command: |
             if [ "${CIRCLE_BRANCH}" == "master" ]; then
               echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc

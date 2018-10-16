@@ -1,5 +1,5 @@
 {
-  "name": "mobx-form-state",
+  "name": "mobx-autoform",
   "version": "0.0.1",
   "description": "Ridiculously simple form state management with mobx",
   "main": "index.js",
@@ -15,7 +15,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/smartprocure/mobx-form-state.git"
+    "url": "git+https://github.com/smartprocure/mobx-autoform.git"
   },
   "keywords": [
     "mobx",
@@ -28,9 +28,9 @@
   },
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/smartprocure/mobx-form-state/issues"
+    "url": "https://github.com/smartprocure/mobx-autoform/issues"
   },
-  "homepage": "https://github.com/smartprocure/mobx-form-state#readme",
+  "homepage": "https://github.com/smartprocure/mobx-autoform#readme",
   "devDependencies": {
     "babel": "^6.5.2",
     "babel-cli": "^6.22.2",
