@@ -7,6 +7,10 @@ The general idea is to standardize a structure for observables and computeds tha
 
 # Quick Start Usage
 
+lodash, futil, and mobx are peerDependencies
+
+`npm i lodash futil mobx mobx-autoform`
+
 https://stackblitz.com/edit/mobx-autoform
 
 
