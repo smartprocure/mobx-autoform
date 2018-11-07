@@ -39,9 +39,9 @@ let Form = ({afterInitField = x => x, validate = functions, ...config}) => {
     getNestedSnapshot: () => F.unflattenObject(values(form.fields)),
     getPatch: () =>
       _.omitBy(_.isNil, unmerge(values(config.fields), values(form.fields))),
-    submit: Command(async () => {
+    submit: Command(() => {
       if (_.isEmpty(form.validate()))
-        await config.submit(form.getSnapshot(), form)
+        return config.submit(form.getSnapshot(), form)
       else throw 'Validation Error'
     }),
     get submitError() {
