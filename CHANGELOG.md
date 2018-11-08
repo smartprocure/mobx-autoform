@@ -1,3 +1,6 @@
+# 0.0.4
+* Add mobx and futil to externals
+
 # 0.0.3
 * Remove `async` function declaration to avoid regenerator runtime / babel-polyfill
 
