@@ -29,8 +29,8 @@ module.exports = {
   },
   externals: {
     'lodash/fp': 'lodash/fp',
-    'futil': 'futil',
-    'mobx': 'mobx',
+    futil: 'futil',
+    mobx: 'mobx',
   },
   plugins: [
     new webpack.DefinePlugin({

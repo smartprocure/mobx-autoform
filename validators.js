@@ -16,7 +16,7 @@ export let validatorJS = Validator => form => {
 export let functions = form => {
   let snapshot = form.getSnapshot()
   return _.flow(
-    F.mapValuesIndexed(({validate = () => {}}, field) =>
+    F.mapValuesIndexed(({ validate = () => {} }, field) =>
       validate(snapshot[field])
     ),
     F.compactObject
