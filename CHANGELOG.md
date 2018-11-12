@@ -1,3 +1,6 @@
+﻿# 0.0.5
+* Updated duti
+
 # 0.0.4
 * Add mobx and futil to externals
 

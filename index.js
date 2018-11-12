@@ -1,7 +1,7 @@
 import F from 'futil'
 import _ from 'lodash/fp'
-import {observable, extendObservable} from 'mobx'
-import {functions} from './validators'
+import { observable, extendObservable } from 'mobx'
+import { functions } from './validators'
 let unmerge = _.flow(
   F.simpleDiff,
   _.mapValues('to')
@@ -10,7 +10,7 @@ let changed = (x, y) => x !== y && !(F.isBlank(x) && F.isBlank(y))
 let Command = F.aspects.command(x => y => extendObservable(y, x))
 
 let values = _.mapValues('value')
-let Form = ({afterInitField = x => x, validate = functions, ...config}) => {
+let Form = ({ afterInitField = x => x, validate = functions, ...config }) => {
   let initField = (x, field) => {
     let node = observable({
       field,
