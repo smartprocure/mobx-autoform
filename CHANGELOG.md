@@ -1,3 +1,6 @@
+# 0.0.7
+* Function validator now looks for `validator` instead of `validate` to not clash with the per field validate method
+
 # 0.0.6
 * Add support for validating subsets of the form.
 
