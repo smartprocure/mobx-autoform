@@ -1,4 +1,7 @@
-﻿# 0.0.5
+# 0.0.6
+* Add support for validating subsets of the form.
+
+# 0.0.5
 * Updated duti
 
 # 0.0.4
