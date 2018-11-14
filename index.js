@@ -28,6 +28,7 @@ let Form = ({ afterInitField = x => x, validate = functions, ...config }) => {
       reset() {
         node.value = F.when(_.isUndefined, '')(x.value)
       },
+      validate: () => form.validate([field]),
       ...x,
     })
     return afterInitField(node, x)
@@ -56,7 +57,7 @@ let Form = ({ afterInitField = x => x, validate = functions, ...config }) => {
     get isValid() {
       return _.isEmpty(form.errors)
     },
-    validate: () => (form.errors = validate(form)),
+    validate: fields => (form.errors = validate(form, fields)),
     add: x => extendObservable(form.fields, F.mapValuesIndexed(initField, x)),
   })
   return form
