@@ -22,7 +22,7 @@ let form = Form({
   fields: {
     email: {},
     password: {
-      validate: x => !x && ['Password is required'],
+      validator: x => !x && ['Password is required'],
     },
   },
   submit: async snapshot => {

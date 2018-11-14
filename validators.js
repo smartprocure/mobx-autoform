@@ -19,8 +19,8 @@ export let functions = (form, fields) => {
   let snapshot = form.getSnapshot()
   return _.flow(
     maybeLimitFields(fields),
-    F.mapValuesIndexed(({ validate = () => {} }, field) =>
-      validate(snapshot[field])
+    F.mapValuesIndexed(({ validator = () => {} }, field) =>
+      validator(snapshot[field])
     ),
     F.compactObject
   )(form.fields)
