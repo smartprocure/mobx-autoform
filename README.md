@@ -68,7 +68,7 @@ We've looked at just about every single form management package for mobx and rea
 | ----- | ----------- |
 | `fields` | An object whose keys are the field paths and value is a field config object. Anything passed in will be made an observable. Required. |
 | `submit(snapshot, form)` | An async function that gets called if validation passes when calling `form.submit`. Required. |
-| `validate(form) -> {field: [errors]}` | Optional. Allows using alternative validation strategies. Some alternative validators are available out of the box such as support for `validatorjs` rules. |
+| `validate(form, fields) -> {field: [errors]}` | Optional. Allows using alternative validation strategies. Some alternative validators are available out of the box such as support for `validatorjs` rules. |
 | `afterInitField(field) -> field` | Optional. Allows hooking into `initField` to add additional properties generically. An example use case would be to support a type based templating of props and is in the demos. |
 
 
@@ -82,6 +82,7 @@ We've looked at just about every single form management package for mobx and rea
 | isValid | A computed boolean representing if there are errors |
 | isDirty | A computed boolean representing if the value has changed since the form was instantiated |
 | reset | A method to reset the field back to the value it had when the form was instantiated |
+| validate | A method to validate only the current field |
 
 ## Form API
 | prop | description |
@@ -95,11 +96,13 @@ We've looked at just about every single form management package for mobx and rea
 | `reset()` | A method which calls reset on all fields | isDirty | A computed boolean representing if any field isDirty |
 | `errors` | An object of field errors |
 | `isValid` | A computed boolean representing if any field has errors |
-| `validate()` | A method to run the validate function and populates form.errors with the results |
+| `validate(fields)` | A method to run the validate function and populates form.errors with the results. Takes an optional array of fields to restrict to a subset of fields to validate. |
 | `add({fields})` | A method to dynamically add fields, which mutates the fields observable and calls initField on all the fields passed in. Takes a object just like the fields object on form. |
 | `initField({field})` | The internal method called on each field object passed into the form. Can be used externally to add the default computeds. |
 
-## Usage with `validatorjs`
+## Validation Options
+
+### Usage with `validatorjs`
 You can use any validation package, but validatorjs support is provided out of the box:
 
 ```js
@@ -133,6 +136,23 @@ import {validatorJS, functions} from 'mobx-autoform/validators'
   validate: mergeOver([validatorJS(V), functions])
 //...
 ```
+
+### Custom Validation Strategy
+
+A validator passed to the form has the following signature:
+
+```js
+(form, optionalSubsetOfFieldsToValidate?) => {field: [errors], ...}
+```
+
+It takes the form as the first parameter (and usually calls `form.snapshot()` to get the values) and an option array of the subset of fields to validate.
+If the array of fields undefined, it should validate all fields.
+Per field validate functions just call the form validate with the current field passed as an array: `validate(form, [field])`.
+
+Validators are expected to return an object where the keys are the fields and the values are arrays of errors for the field.
+
+The `validators.js` file has implementations that should help as a reference as well.
+
 
 ## Usage with React
 `mobx-autoform` pairs well with mobx-react. We recommend authoring wrapper components that take fields as props, and leveraging `futil`'s  `domLens` functions, but keep in mind that you don't _have_ to:

@@ -1,21 +1,24 @@
 import F from 'futil'
 import _ from 'lodash/fp'
 
-// Validators take the signature:
-//   form => {field: [errors], ...}
+let maybeLimitFields = fields => fields ? _.pick(fields) : x => x
 
-export let validatorJS = Validator => form => {
+export let validatorJS = Validator => (form, fields) => {
   let validation = new Validator(
     form.getSnapshot(),
-    _.mapValues('rules', form.fields)
+    _.flow(
+      maybeLimitFields(fields),
+      _.mapValues('rules')
+    )(form.fields)
   )
   validation.setAttributeNames(_.mapValues('label', form.fields))
   return validation.fails() ? validation.errors.all() : {}
 }
 
-export let functions = form => {
+export let functions = (form, fields) => {
   let snapshot = form.getSnapshot()
   return _.flow(
+    maybeLimitFields(fields),
     F.mapValuesIndexed(({ validate = () => {} }, field) =>
       validate(snapshot[field])
     ),
