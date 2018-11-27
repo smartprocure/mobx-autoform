@@ -1,14 +1,15 @@
 import F from 'futil'
 import _ from 'lodash/fp'
 
-let maybeLimitFields = fields => fields ? _.pick(fields) : x => x
+let maybeLimitFields = fields => (fields ? _.pick(fields) : x => x)
 
 export let validatorJS = Validator => (form, fields) => {
   let validation = new Validator(
     form.getSnapshot(),
     _.flow(
       maybeLimitFields(fields),
-      _.mapValues('rules')
+      _.mapValues('rules'),
+      _.compact
     )(form.fields)
   )
   validation.setAttributeNames(_.mapValues('label', form.fields))
