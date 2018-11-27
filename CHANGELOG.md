@@ -1,3 +1,6 @@
+# 0.0.10
+* ValidatorJS rules need to be converted to plain JS
+
 # 0.0.9
 * Fix validatorJS rules existance check
 
