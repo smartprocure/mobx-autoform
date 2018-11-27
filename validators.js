@@ -8,8 +8,8 @@ export let validatorJS = Validator => (form, fields) => {
     form.getSnapshot(),
     _.flow(
       maybeLimitFields(fields),
-      _.mapValues('rules'),
-      _.compact
+      _.filter('rules'),
+      _.mapValues('rules')
     )(form.fields)
   )
   validation.setAttributeNames(_.mapValues('label', form.fields))
