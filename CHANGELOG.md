@@ -1,3 +1,6 @@
+# 0.0.9
+* Fix validatorJS rules existance check
+
 # 0.0.8
 * When using validatorJS validator, skip fields that do not have validation rules defined
 
