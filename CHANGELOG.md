@@ -1,3 +1,6 @@
+# 0.0.8
+* When using validatorJS validator, skip fields that do not have validation rules defined
+
 # 0.0.7
 * Function validator now looks for `validator` instead of `validate` to not clash with the per field validate method
 
