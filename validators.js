@@ -1,5 +1,6 @@
 import F from 'futil'
 import _ from 'lodash/fp'
+import {toJS} from 'mobx'
 
 let maybeLimitFields = fields => (fields ? _.pick(fields) : x => x)
 
@@ -8,7 +9,7 @@ export let validatorJS = Validator => (form, fields) => {
     form.getSnapshot(),
     _.flow(
       maybeLimitFields(fields),
-      _.mapValues('rules'),
+      _.mapValues(x => toJS(x.rules)),
       F.compactObject
     )(form.fields)
   )
