@@ -1,10 +1,14 @@
 import F from 'futil'
 import _ from 'lodash/fp'
-import {toJS} from 'mobx'
+import { toJS } from 'mobx'
 
 let maybeLimitFields = fields => (fields ? _.pick(fields) : x => x)
 
-export let validatorJS = Validator => (form, fields, { customMessages, attributeNames, attributeFormatter } = {}) => {
+export let validatorJS = Validator => (
+  form,
+  fields,
+  { customMessages, attributeNames, attributeFormatter } = {}
+) => {
   let validation = new Validator(
     form.getSnapshot(),
     _.flow(
@@ -19,7 +23,9 @@ export let validatorJS = Validator => (form, fields, { customMessages, attribute
     validation.setAttributeFormatter(attributeFormatter)
   }
 
-  validation.setAttributeNames(attributeNames || _.mapValues('label', form.fields))
+  validation.setAttributeNames(
+    attributeNames || _.mapValues('label', form.fields)
+  )
   return validation.fails() ? validation.errors.all() : {}
 }
 

@@ -1,3 +1,6 @@
+# 0.0.11
+* Ability to provide extra ValidatorJS params
+
 # 0.0.10
 * ValidatorJS rules need to be converted to plain JS
 
