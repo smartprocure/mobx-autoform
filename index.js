@@ -48,7 +48,10 @@ let Form = ({ afterInitField = x => x, validate = functions, ...config }) => {
     get submitError() {
       return F.getOrReturn('message', form.submit.state.error)
     },
-    reset: () => _.invokeMap('reset', form.fields),
+    reset() {
+      _.invokeMap('reset', form.fields)
+      form.errors = {}
+    },
     get isDirty() {
       return _.some('isDirty', form.fields)
     },

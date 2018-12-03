@@ -1,6 +1,6 @@
 import F from 'futil'
 import _ from 'lodash/fp'
-import {toJS} from 'mobx'
+import { toJS } from 'mobx'
 
 let maybeLimitFields = fields => (fields ? _.pick(fields) : x => x)
 

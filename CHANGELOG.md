@@ -1,3 +1,6 @@
+# 0.0.11
+* Clear validation errors on form reset
+
 # 0.0.10
 * ValidatorJS rules need to be converted to plain JS
 
