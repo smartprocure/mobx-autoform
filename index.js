@@ -52,8 +52,8 @@ let Form = ({ afterInitField = x => x, validate = functions, ...config }) => {
     },
     reset() {
       _.invokeMap('reset', form.fields)
-      form.submit.state.error = null
       form.errors = {}
+      form.submit.state.error = null
     },
     get isDirty() {
       return _.some('isDirty', form.fields)
