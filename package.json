@@ -1,6 +1,6 @@
 {
   "name": "mobx-autoform",
-  "version": "0.0.11",
+  "version": "0.0.12",
   "description": "Ridiculously simple form state management with mobx",
   "main": "lib/mobx-autoform.js",
   "scripts": {
@@ -20,7 +20,10 @@
   "keywords": [
     "mobx",
     "form",
-    "mobx-form"
+    "mobx-form",
+    "autoform",
+    "mobx-autoform",
+    "mobx-react-form"
   ],
   "author": {
     "name": "Samuel Greene",
@@ -52,7 +55,7 @@
   "peerDependencies": {
     "futil": "^1.55.0",
     "lodash": "^4.17.11",
-    "mobx": "^5.5.0"
+    "mobx": ">=4"
   },
   "prettier": {
     "singleQuote": true,

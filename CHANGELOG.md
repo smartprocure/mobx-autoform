@@ -1,5 +1,8 @@
-# 0.0.11
+# 0.0.12
 * Clear validation errors on form reset
+
+# 0.0.11
+* Fix mobx peer dependency minimum
 
 # 0.0.10
 * ValidatorJS rules need to be converted to plain JS

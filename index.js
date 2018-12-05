@@ -41,6 +41,8 @@ let Form = ({ afterInitField = x => x, validate = functions, ...config }) => {
     getPatch: () =>
       _.omitBy(_.isNil, unmerge(values(config.fields), values(form.fields))),
     submit: Command(() => {
+      form.errors = {}
+      form.submit.state.error = null
       if (_.isEmpty(form.validate()))
         return config.submit(form.getSnapshot(), form)
       else throw 'Validation Error'
@@ -50,6 +52,7 @@ let Form = ({ afterInitField = x => x, validate = functions, ...config }) => {
     },
     reset() {
       _.invokeMap('reset', form.fields)
+      form.submit.state.error = null
       form.errors = {}
     },
     get isDirty() {
