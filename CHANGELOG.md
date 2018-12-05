@@ -1,3 +1,6 @@
+# 0.0.11
+* Fix mobx peer dependency minimum
+
 # 0.0.10
 * ValidatorJS rules need to be converted to plain JS
 
