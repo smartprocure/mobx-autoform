@@ -1,3 +1,6 @@
+# 0.0.12
+* Clear validation errors on form reset
+
 # 0.0.11
 * Fix mobx peer dependency minimum
 
