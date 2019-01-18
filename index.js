@@ -28,7 +28,7 @@ let Form = ({ afterInitField = x => x, validate = functions, ...config }) => {
       reset() {
         node.value = F.when(_.isUndefined, '')(x.value)
       },
-      validate: () => form.validate([field]),
+      validate: () => form.validate(_.uniq([field, ..._.keys(form.errors)])),
       ...x,
     })
     return afterInitField(node, x)
