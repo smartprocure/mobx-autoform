@@ -1,3 +1,6 @@
+# 0.0.13
+* Validating a field should also include fields which are currently invalid
+
 # 0.0.12
 * Clear validation errors on form reset
 
