@@ -65,8 +65,8 @@ let Form = ({ afterInitField = x => x, validate = functions, ...config }) => {
     },
     validate: fields =>
       (form.errors = fields
-        ? _.extend(form.errors, validate(form, fields))
-        : validate(form, fields)),
+        ? { ..._.omit(fields, form.errors), ...validate(form, fields) }
+        : validate(form)),
     add: x => extendObservable(form.fields, F.mapValuesIndexed(initField, x)),
   })
   return form

@@ -1,3 +1,6 @@
+# 0.0.14
+* Fix issue with preserving already invalid fields when validating a field subset
+
 # 0.0.13
 * Validating a field should also include fields which are currently invalid
 

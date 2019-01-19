@@ -1,6 +1,6 @@
 {
   "name": "mobx-autoform",
-  "version": "0.0.13",
+  "version": "0.0.14",
   "description": "Ridiculously simple form state management with mobx",
   "main": "lib/mobx-autoform.js",
   "scripts": {
