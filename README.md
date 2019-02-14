@@ -75,14 +75,15 @@ We've looked at just about every single form management package for mobx and rea
 ## Field API
 | prop | description |
 | ---- | ----------- |
-| field | The field key |
-| label | The display label, defaults to _.startCase on field |
-| value | The field's current value. Will default to `''` if no value is provided. |
-| errors | A computed of validation errors for the field |
-| isValid | A computed boolean representing if there are errors |
-| isDirty | A computed boolean representing if the value has changed since the form was instantiated |
-| reset | A method to reset the field back to the value it had when the form was instantiated |
-| validate | A method to validate only the current field |
+| `field` | The field key |
+| `label` | The display label, defaults to _.startCase on field |
+| `value` | The field's current value. Will default to `''` if no value is provided. |
+| `errors` | A computed of validation errors for the field |
+| `isValid` | A computed boolean representing if there are errors |
+| `isDirty` | A computed boolean representing if the value has changed since the form was instantiated |
+| `clean()` | A method to declare the field clean so that isDirty will report changes against its current value rather than its original value |
+| `reset()` | A method to reset the field back to the value it had when the form was instantiated |
+| `validate()` | A method to validate only the current field |
 
 ## Form API
 | prop | description |
