@@ -29,7 +29,7 @@ let Form = ({ afterInitField = x => x, validate = functions, ...config }) => {
         node.value = F.when(_.isUndefined, '')(x.value)
       },
       validate: () => form.validate([field]),
-      clean: () => {
+      clean () {
         x.value = node.value
       },
       ...x,
