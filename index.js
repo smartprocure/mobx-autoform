@@ -16,6 +16,7 @@ let Form = ({ afterInitField = x => x, validate = functions, ...config }) => {
       field,
       label: x.label || _.startCase(field),
       value: '', // in case no value is provided, avoids controlled vs uncontrolled warning and need for mobx 4
+      cleanValue: x.value || '',
       get errors() {
         return form.errors[field] || []
       },
@@ -23,12 +24,15 @@ let Form = ({ afterInitField = x => x, validate = functions, ...config }) => {
         return !node.errors.length
       },
       get isDirty() {
-        return changed(node.value, x.value)
+        return changed(node.value, node.cleanValue)
       },
       reset() {
         node.value = F.when(_.isUndefined, '')(x.value)
       },
       validate: () => form.validate([field]),
+      declareClean: () => {
+        node.cleanValue = node.value
+      },
       ...x,
     })
     return afterInitField(node, x)
@@ -57,6 +61,9 @@ let Form = ({ afterInitField = x => x, validate = functions, ...config }) => {
     },
     get isDirty() {
       return _.some('isDirty', form.fields)
+    },
+    declareClean() {
+      _.invokeMap('declareClean', form.fields)
     },
     // Validation
     errors: {},
