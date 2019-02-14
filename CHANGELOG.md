@@ -1,3 +1,6 @@
+# 0.0.15
+* add `clean` method to Fields and Forms to allow dirty checking against current values
+
 # 0.0.14
 * Fix issue with preserving already invalid fields when validating a field subset
 
