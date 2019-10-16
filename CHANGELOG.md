@@ -1,3 +1,6 @@
+# 0.0.16
+* `{form,node}.isDirty` now correctly identify dirty arrays/objects
+
 # 0.0.15
 * add `clean` method to Fields and Forms to allow dirty checking against current values
 
