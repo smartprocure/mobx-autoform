@@ -6,7 +6,7 @@ let unmerge = _.flow(
   F.simpleDiff,
   _.mapValues('to')
 )
-let changed = (x, y) => x !== y && !(F.isBlank(x) && F.isBlank(y))
+let changed = (x, y) => !_.isEqual(x, y) && !(F.isBlank(x) && F.isBlank(y))
 let Command = F.aspects.command(x => y => extendObservable(y, x))
 
 let values = _.mapValues('value')
