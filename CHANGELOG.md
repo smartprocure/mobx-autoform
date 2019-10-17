@@ -1,3 +1,6 @@
+# 0.1.1
+* 0.0.16 v3. Convert other value to a plain javascript object before doing the comparison
+
 # 0.1.0
 * Add `{form,field}.empty` methods.
 
