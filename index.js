@@ -34,6 +34,11 @@ let Form = ({ afterInitField = x => x, validate = functions, ...config }) => {
       clean() {
         x.value = node.value
       },
+      empty() {
+        if (_.isArray(toJS(x.value))) node.value = []
+        else if (_.isPlainObject(toJS(x.value))) node.value = {}
+        else node.value = ''
+      },
       ..._.omit('value', x),
     })
     return afterInitField(node, x)
@@ -65,6 +70,9 @@ let Form = ({ afterInitField = x => x, validate = functions, ...config }) => {
     },
     clean() {
       _.invokeMap('clean', form.fields)
+    },
+    empty() {
+      _.invokeMap('empty', form.fields)
     },
     // Validation
     errors: {},
