@@ -83,6 +83,7 @@ We've looked at just about every single form management package for mobx and rea
 | `isDirty` | A computed boolean representing if the value has changed since the form was instantiated |
 | `clean()` | A method to declare the field clean so that isDirty will report changes against its current value rather than its original value |
 | `reset()` | A method to reset the field back to the value it had when the form was instantiated |
+| `empty()` | A method to reset the field to an empty value depending on its type. Arrays get reset to `[]` and objects to `{}`. Everything else to `""` |
 | `validate()` | A method to validate only the current field |
 
 ## Form API
