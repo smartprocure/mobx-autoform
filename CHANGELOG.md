@@ -1,3 +1,6 @@
+# 0.0.17
+* 0.0.16 v2. Convert value to a plain javascript object before doing the comparison
+
 # 0.0.16
 * `{form,node}.isDirty` now correctly identify dirty arrays/objects
 

@@ -1,6 +1,6 @@
 import F from 'futil'
 import _ from 'lodash/fp'
-import { observable, extendObservable } from 'mobx'
+import { observable, extendObservable, toJS } from 'mobx'
 import { functions } from './validators'
 let unmerge = _.flow(
   F.simpleDiff,
@@ -23,7 +23,7 @@ let Form = ({ afterInitField = x => x, validate = functions, ...config }) => {
         return !node.errors.length
       },
       get isDirty() {
-        return changed(node.value, x.value)
+        return changed(toJS(node.value), x.value)
       },
       reset() {
         node.value = F.when(_.isUndefined, '')(x.value)
