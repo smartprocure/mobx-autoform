@@ -25,7 +25,7 @@ let Form = ({ afterInitField = x => x, validate = functions, ...config }) => {
         return !node.errors.length
       },
       get isDirty() {
-        return changed(toJS(node.value), x.value)
+        return changed(toJS(node.value), toJS(x.value))
       },
       reset() {
         node.value = F.when(_.isUndefined, '')(x.value)
