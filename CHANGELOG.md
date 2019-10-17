@@ -1,3 +1,6 @@
+# 0.0.18
+* Correctly initialize field value
+
 # 0.0.17
 * 0.0.16 v2. Convert value to a plain javascript object before doing the comparison
 

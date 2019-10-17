@@ -15,7 +15,9 @@ let Form = ({ afterInitField = x => x, validate = functions, ...config }) => {
     let node = observable({
       field,
       label: x.label || _.startCase(field),
-      value: '', // in case no value is provided, avoids controlled vs uncontrolled warning and need for mobx 4
+      // in case no value is provided, avoids controlled vs uncontrolled warning
+      // and need for mobx 4
+      value: _.getOr('', 'value', x),
       get errors() {
         return form.errors[field] || []
       },
@@ -32,7 +34,7 @@ let Form = ({ afterInitField = x => x, validate = functions, ...config }) => {
       clean() {
         x.value = node.value
       },
-      ...x,
+      ..._.omit('value', x),
     })
     return afterInitField(node, x)
   }
