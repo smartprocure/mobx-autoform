@@ -5,11 +5,13 @@
   "main": "lib/mobx-autoform.js",
   "scripts": {
     "build": "webpack",
+    "test": "jest src",
+    "test:watch": "jest --watch src",
     "danger": "duti",
-    "lint": "eslint index.js validators.js",
+    "lint": "eslint src/",
     "lint:ci": "npm run lint -- -o lint-results.json -f json",
-    "lint-fix": "eslint index.js validators.js --fix",
-    "fmt": "prettier --write *.js; prettier --write '{index,validators}.js'",
+    "lint-fix": "eslint src/ --fix",
+    "fmt": "prettier --write src/**/*.js",
     "duti:fix": "npm run fmt && npm run lint-fix && npm run fmt",
     "prepublish": "webpack"
   },
@@ -35,26 +37,24 @@
   },
   "homepage": "https://github.com/smartprocure/mobx-autoform#readme",
   "devDependencies": {
-    "babel": "^6.5.2",
-    "babel-cli": "^6.22.2",
-    "babel-core": "^6.22.1",
-    "babel-eslint": "^8.0.0",
-    "babel-loader": "^7.0.0",
-    "babel-plugin-transform-object-rest-spread": "^6.26.0",
-    "babel-preset-env": "^1.6.1",
-    "duti": "^0.14.1",
-    "eslint": "^5.6.1",
-    "eslint-config-smartprocure": "^1.2.0",
-    "futil": "^1.55.0",
-    "lodash": "^4.17.11",
-    "mobx": "^5.5.0",
-    "prettier": "^1.14.3",
-    "webpack": "^4.1.0",
-    "webpack-cli": "^3.0.0"
+    "@babel/cli": "^7.8.4",
+    "@babel/core": "^7.8.4",
+    "@babel/preset-env": "^7.8.4",
+    "babel-loader": "^8.0.6",
+    "duti": "^0.15.2",
+    "eslint": "^6.8.0",
+    "eslint-config-smartprocure": "^1.2.1",
+    "futil": "^1.65.0",
+    "jest": "^25.1.0",
+    "lodash": "^4.17.15",
+    "mobx": "^5.15.4",
+    "prettier": "^1.19.1",
+    "webpack": "^4.41.5",
+    "webpack-cli": "^3.3.10"
   },
   "peerDependencies": {
-    "futil": "^1.55.0",
-    "lodash": "^4.17.11",
+    "futil": "^1.65.0",
+    "lodash": "^4.17.15",
     "mobx": ">=4"
   },
   "prettier": {
@@ -62,7 +62,19 @@
     "semi": false,
     "trailingComma": "es5"
   },
-  "dependencies": {
-    "babel-polyfill": "^6.26.0"
+  "dependencies": {},
+  "babel": {
+    "presets": [
+      "@babel/preset-env"
+    ]
+  },
+  "eslint": {
+    "extends": [
+      "smartprocure"
+    ],
+    "parserOptions": {
+      "sourceType": "module",
+      "ecmaVersion": "2019"
+    }
   }
 }

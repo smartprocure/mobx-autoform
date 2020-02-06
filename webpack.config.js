@@ -8,7 +8,7 @@ var outputFile = libraryName + '.js'
 module.exports = {
   devtool: 'source-map',
   mode: 'production',
-  entry: path.join(__dirname, 'index.js'),
+  entry: path.join(__dirname, 'src', 'index.js'),
   output: {
     path: path.join(__dirname, 'lib'),
     filename: outputFile,

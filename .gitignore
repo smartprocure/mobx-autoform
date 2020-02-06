@@ -62,6 +62,7 @@ typings/
 
 # Build Output
 lib
+lint-results.json
 
 #OS X
 .DS_Store
