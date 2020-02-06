@@ -1,3 +1,6 @@
+# 0.1.3
+* Chore: package bumps
+
 # 0.1.2
 * Correctly initialize field value
 
