@@ -1,12 +1,13 @@
 {
   "name": "mobx-autoform",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Ridiculously simple form state management with mobx",
   "main": "lib/mobx-autoform.js",
   "scripts": {
     "build": "webpack",
     "test": "jest src",
-    "test:watch": "jest --watch src",
+    "test:watch": "jest --watch --",
+    "test:ci": "jest --coverage --json --outputFile=test-results.json",
     "danger": "duti",
     "lint": "eslint src/",
     "lint:ci": "npm run lint -- -o lint-results.json -f json",
@@ -41,6 +42,7 @@
     "@babel/core": "^7.8.4",
     "@babel/preset-env": "^7.8.4",
     "babel-loader": "^8.0.6",
+    "danger": "^9.2.10",
     "duti": "^0.15.2",
     "eslint": "^6.8.0",
     "eslint-config-smartprocure": "^1.2.1",
