@@ -1,10 +1,10 @@
 {
   "name": "mobx-autoform",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Ridiculously simple form state management with mobx",
-  "main": "lib/mobx-autoform.js",
+  "main": "lib/index.js",
   "scripts": {
-    "build": "webpack",
+    "build": "babel ./src --out-dir ./lib --source-maps --delete-dir-on-start",
     "test": "jest src",
     "test:watch": "jest --watch --",
     "test:ci": "jest --coverage --json --outputFile=test-results.json",
@@ -14,7 +14,7 @@
     "lint-fix": "eslint src/ --fix",
     "fmt": "prettier --write src/**/*.js",
     "duti:fix": "npm run fmt && npm run lint-fix && npm run fmt",
-    "prepublish": "webpack"
+    "prepublish": "npm run build"
   },
   "repository": {
     "type": "git",
@@ -41,7 +41,7 @@
     "@babel/cli": "^7.8.4",
     "@babel/core": "^7.8.4",
     "@babel/preset-env": "^7.8.4",
-    "babel-loader": "^8.0.6",
+    "babel-eslint": "^10.0.3",
     "danger": "^9.2.10",
     "duti": "^0.15.2",
     "eslint": "^6.8.0",
@@ -50,9 +50,7 @@
     "jest": "^25.1.0",
     "lodash": "^4.17.15",
     "mobx": "^5.15.4",
-    "prettier": "^1.19.1",
-    "webpack": "^4.41.5",
-    "webpack-cli": "^3.3.10"
+    "prettier": "^1.19.1"
   },
   "peerDependencies": {
     "futil": "^1.65.0",
@@ -77,9 +75,6 @@
     "extends": [
       "smartprocure"
     ],
-    "parserOptions": {
-      "sourceType": "module",
-      "ecmaVersion": "2019"
-    }
+    "parser": "babel-eslint"
   }
 }

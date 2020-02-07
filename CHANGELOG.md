@@ -1,3 +1,6 @@
+# 0.1.4
+* Chore: drop webpack
+
 # 0.1.3
 * Chore: package bumps
 
