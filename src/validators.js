@@ -11,7 +11,7 @@ export let validatorJS = Validator => (form, fields) => {
       maybeLimitFields(fields),
       _.mapValues(x => toJS(x.rules)),
       F.compactObject
-    )(form.fields)
+    )(form.flatFields)
   )
   validation.setAttributeNames(_.mapValues('label', form.fields))
   return validation.fails() ? validation.errors.all() : {}
@@ -25,5 +25,5 @@ export let functions = (form, fields) => {
       validator(snapshot[field])
     ),
     F.compactObject
-  )(form.fields)
+  )(form.flatFields)
 }

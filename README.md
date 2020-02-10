@@ -14,7 +14,7 @@ lodash, futil, and mobx are peerDependencies
 https://stackblitz.com/edit/mobx-autoform
 
 
-```js
+```javascript
 import Form from 'mobx-autoform'
 import {reaction} from 'mobx'
 
@@ -24,6 +24,14 @@ let form = Form({
     password: {
       validator: x => !x && ['Password is required'],
     },
+    addresses: {
+      value: [],
+      arrayFields: {
+        street: {
+          label: 'Street Address',
+        }
+      }
+    }
   },
   submit: async snapshot => {
 	// Throwing here will capture errors
@@ -46,9 +54,27 @@ await form.submit()
 form.isValid // false
 // form.fields.password.errors == ['Password is required']
 
+// Nested array fields
+
+form.fields.addresses.add({ street: '401 Meridian St.' })
+form.fields.addresses.add({ street: '1210 Jefferson Ave.' })
+// form.fields.addresses.isDirty === true
+form.fields.addresses.fields['0.street'].value = '666 New Hell Road'
+
+// Mutating subfields values syncs back to parent's value
+form.fields.addresses.value === [
+  { street: '401 Meridian St.' }
+  { street: '666 New Hell Road' }
+]
+
+// Removing values
+form.fields.addresses.remove({ street: '1210 Jefferson Ave.' })
+form.fields.addresses.removeIndex(0)
+// form.fields.address.fields === {}
 ```
 
 # Why?
+
 We've looked at just about every single form management package for mobx and react. Almost all of them fall apart for various reasons. Some design goals:
 
 - Don't abstract away mobx, it's amazing!
@@ -58,56 +84,72 @@ We've looked at just about every single form management package for mobx and rea
 - Stay as radically simple as possible. Philosphically, prefer simple over easy. The entire source is a few dozen lines of code even _after_ prettier has its way with it.
 - Be simple to extend by just leveraging `mobx`.
 
-
 # API
 
 ## Form Config
+
 `Form` takes an object with the following properties:
 
-| Props | Description |
-| ----- | ----------- |
-| `fields` | An object whose keys are the field paths and value is a field config object. Anything passed in will be made an observable. Required. |
-| `submit(snapshot, form)` | An async function that gets called if validation passes when calling `form.submit`. Required. |
-| `validate(form, fields) -> {field: [errors]}` | Optional. Allows using alternative validation strategies. Some alternative validators are available out of the box such as support for `validatorjs` rules. |
-| `afterInitField(field) -> field` | Optional. Allows hooking into `initField` to add additional properties generically. An example use case would be to support a type based templating of props and is in the demos. |
+| Prop                                          | Description                                                                                                                                                                       |
+| -----                                         | -----------                                                                                                                                                                       |
+| `fields`                                      | An object whose keys are the field paths and value is a field config object. Anything passed in will be made an observable. Required.                                             |
+| `submit(snapshot, form)`                      | An async function that gets called if validation passes when calling `form.submit`. Required.                                                                                     |
+| `validate(form, fields) -> {field: [errors]}` | Optional. Allows using alternative validation strategies. Some alternative validators are available out of the box such as support for `validatorjs` rules.                       |
+| `afterInitField(field) -> field`              | Optional. Allows hooking into `initField` to add additional properties generically. An example use case would be to support a type based templating of props and is in the demos. |
 
 
 ## Field API
-| prop | description |
-| ---- | ----------- |
-| `field` | The field key |
-| `label` | The display label, defaults to _.startCase on field |
-| `value` | The field's current value. Will default to `''` if no value is provided. |
-| `errors` | A computed of validation errors for the field |
-| `isValid` | A computed boolean representing if there are errors |
-| `isDirty` | A computed boolean representing if the value has changed since the form was instantiated |
-| `clean()` | A method to declare the field clean so that isDirty will report changes against its current value rather than its original value |
-| `reset()` | A method to reset the field back to the value it had when the form was instantiated |
-| `empty()` | A method to reset the field to an empty value depending on its type. Arrays get reset to `[]` and objects to `{}`. Everything else to `""` |
-| `validate()` | A method to validate only the current field |
+
+| Prop          | Description                                                                                                                                |
+| ----          | -----------                                                                                                                                |
+| `field`       | The field key                                                                                                                              |
+| `label`       | The display label, defaults to `_.startCase` on field                                                                                      |
+| `value`       | The field's current value. Will default to `''` if no value is provided.                                                                   |
+| `arrayFields` | (Optional) Same as `form.fields` but for array items in case this field's value is an array object                                         |
+| `errors`      | A computed of validation errors for the field                                                                                              |
+| `isValid`     | A computed boolean representing if there are errors                                                                                        |
+| `isDirty`     | A computed boolean representing if the value has changed since the form was instantiated                                                   |
+| `clean()`     | A method to declare the field clean so that isDirty will report changes against its current value rather than its original value           |
+| `reset()`     | A method to reset the field back to the value it had when the form was instantiated                                                        |
+| `validate()`  | A method to validate only the current field                                                                                                |
+
+Additionally, the field will be extended with the following props if `arrayFields` is present:
+
+| Prop                 | Description                                                                                                                  |
+| ----                 | -----------                                                                                                                  |
+| `fields`             | Same as `form.fields`, but for array subfields. Ex: `{ '0.first': { value: 'John', ... }, '0.last': { value: 'Doe', ... } }` |
+| `add(obj)`           | Push `obj` on this field's `value` and add it as a subfield to `fields`                                                      |
+| `remove(obj)`        | Remove `obj` from this field's `value`                                                                                       |
+| `removeIndex(index)` | Remove item from this field's `value` at index `index`                                                                       |
+
+*Caveat: Do not mutate `field.value` directly (e.g. `field.value.push`) if `field.value` is an array
 
 ## Form API
-| prop | description |
-| ---- | ----------- |
-| `fields` | The observable fields object |
-| `getSnapshot()` | A method which returns an object of all of the field values |
-| `getNestedSnapshot()` | Just like `getSnapshot`, but calls F.unflattenObject |
-| `getPatch()` | A method which returns a "patch", which is an object of only the field values that have changed since the form was instantiated |
-| `submit()` | A futil `Command` method to submit the form, which triggers validation and then calls the submit function passed to Form |
-| `submitError` | A computed that pulls the error from the submit Command |
-| `reset()` | A method which calls reset on all fields | isDirty | A computed boolean representing if any field isDirty |
-| `errors` | An object of field errors |
-| `isValid` | A computed boolean representing if any field has errors |
-| `validate(fields)` | A method to run the validate function and populates form.errors with the results. Takes an optional array of fields to restrict to a subset of fields to validate. |
-| `add({fields})` | A method to dynamically add fields, which mutates the fields observable and calls initField on all the fields passed in. Takes a object just like the fields object on form. |
-| `initField({field})` | The internal method called on each field object passed into the form. Can be used externally to add the default computeds. |
+
+| Prop                  | Description                                                                                                                                                                  |
+| ----                  | -----------                                                                                                                                                                  |
+| `fields`              | The observable fields object                                                                                                                                                 |
+| `flatFields`          | Returns a flat object where all the nested `fields` are on the top-level                                                                                                     |
+| `getSnapshot()`       | A method which returns an object of all of the field values                                                                                                                  |
+| `getNestedSnapshot()` | Just like `getSnapshot`, but calls F.unflattenObject                                                                                                                         |
+| `getPatch()`          | A method which returns a "patch", which is an object of only the field values that have changed since the form was instantiated                                              |
+| `submit()`            | A futil `Command` method to submit the form, which triggers validation and then calls the submit function passed to Form                                                     |
+| `submitError`         | A computed that pulls the error from the submit Command                                                                                                                      |
+| `reset()`             | A method which calls reset on all fields                                                                                                                                     |
+| `isDirty`             | A computed boolean representing if any field isDirty                                                                                                                         |
+| `errors`              | An object of field errors                                                                                                                                                    |
+| `isValid`             | A computed boolean representing if any field has errors                                                                                                                      |
+| `validate(fields)`    | A method to run the validate function and populates form.errors with the results. Takes an optional array of fields to restrict to a subset of fields to validate.           |
+| `add({fields})`       | A method to dynamically add fields, which mutates the fields observable and calls initField on all the fields passed in. Takes a object just like the fields object on form. |
+| `initField({field})`  | The internal method called on each field object passed into the form. Can be used externally to add the default computeds.                                                   |
 
 ## Validation Options
 
 ### Usage with `validatorjs`
+
 You can use any validation package, but validatorjs support is provided out of the box:
 
-```js
+```javascript
 import Form from 'mobx-autoform'
 import {validatorJS} from 'mobx-autoform/validators'
 import V from 'validatorjs'
@@ -131,7 +173,7 @@ let form = Form({
 
 You can also combine validation strategies with `F.mergeOver`:
 
-```js
+```javascript
 import {mergeOver} from 'futil'
 import {validatorJS, functions} from 'mobx-autoform/validators'
 //...
@@ -143,7 +185,7 @@ import {validatorJS, functions} from 'mobx-autoform/validators'
 
 A validator passed to the form has the following signature:
 
-```js
+```javascript
 (form, optionalSubsetOfFieldsToValidate?) => {field: [errors], ...}
 ```
 
@@ -157,9 +199,10 @@ The `validators.js` file has implementations that should help as a reference as 
 
 
 ## Usage with React
+
 `mobx-autoform` pairs well with mobx-react. We recommend authoring wrapper components that take fields as props, and leveraging `futil`'s  `domLens` functions, but keep in mind that you don't _have_ to:
 
-```js
+```javascript
 import React from 'react'
 import {observer} from 'mobx-react'
 import F from 'futil'
@@ -187,28 +230,34 @@ export let Input = observer(({ field }) =>
 ```
 
 ### Automatic Layout
+
 Check out the `autoform` file in the demo. The general idea is to put `Component` and `props` properties on fields, and then just map over `form.fields`
 
-
 ## Dynamically Adding Fields
+
 Fields can be dynamically added using `form.add`. Since fields is an observable object, all it really does is simply call `initField` on the values and adds them to the fields object. **Note:** If you need mobx 4 support, make sure to use `values(fields)`  if you're dynamically iterating over fields if you want `observer` to react to new fields being added.
 
 ## Arrays of Objects
+
 Arrays of objects are supported by simply adding fields where the index is part of the field name - e.g. `listField.0.name`, `listField.1.name`, etc. You can determine what the next index should be when calling add by checking the `length` of the field on the nested snapshot - e.g. 
-```js
+
+```javascript
 let nextIndex  = _.getOr(0, `listField.length`, form.getNestedSnapshot())
 ```
 
 ## Extending the form
+
 `Form` doesn't have any private state, so anything you'd want to extend a form with can generally be done with mobx's `extendObservable` on a form instance - including adding new computed properties.
 
 ## Control Methods
+
 Specific components might have an API to do useful things. As mentioned in the example react integration, you can decorate the field with ref methods to expose component methods on the field - with this you could do stuff like `form.fields.email.focus()`
 
 ## Loading Spinners
+
 Since `form.submit` is a futil Command, it includes state to tell you if it's currently submitting, and it's status will be success or failure after it runs (automatically reset after 500ms by default). If you're using react, you might build a component to render the submit button like this:
 
-```js
+```javascript
 export let CommandButton = observer(({command, children}) => (
   <button onClick={command} disabled={command.state.processing}>
     {_.startCase(command.state.status) || children}
