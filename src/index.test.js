@@ -1,4 +1,3 @@
-import F from 'futil'
 import _ from 'lodash/fp'
 import Form from './index.js'
 
