@@ -1,7 +1,8 @@
 import F from 'futil'
 import _ from 'lodash/fp'
 import { observable, extendObservable, toJS, remove } from 'mobx'
-import { functions } from './validators'
+import * as validators from './validators'
+export { validators }
 
 let unmerge = _.flow(F.simpleDiff, _.mapValues('to'))
 let changed = (x, y) => !_.isEqual(x, y) && !(F.isBlank(x) && F.isBlank(y))
@@ -11,7 +12,7 @@ let values = _.flow(_.mapValues('value'), F.flattenObject)
 export default ({
   fields,
   submit,
-  validate = functions,
+  validate = validators.functions,
   afterInitField = x => x,
 }) => {
   let addMissingSubfields = node => {

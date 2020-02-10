@@ -1,5 +1,8 @@
-# 0.2.0
+# 0.3.0
 * Add nested array fields support
+
+# 0.2.0
+* Export validators
 
 # 0.1.4
 * Chore: drop webpack
