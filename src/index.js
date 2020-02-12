@@ -1,103 +1,126 @@
 import F from 'futil'
 import _ from 'lodash/fp'
-import { observable, extendObservable, toJS, remove } from 'mobx'
+import { observable, extendObservable } from 'mobx'
 import * as validators from './validators'
-export { validators }
+import { flattenFields, fieldPath } from './util'
 
 let unmerge = _.flow(F.simpleDiff, _.mapValues('to'))
 let changed = (x, y) => !_.isEqual(x, y) && !(F.isBlank(x) && F.isBlank(y))
 let Command = F.aspects.command(x => y => extendObservable(y, x))
-let values = _.flow(_.mapValues('value'), F.flattenObject)
 
-export default ({
+let Form = ({
   fields,
   submit,
   validate = validators.functions,
   afterInitField = x => x,
 }) => {
-  let addMissingSubfields = node => {
-    let addSubfield = index =>
-      extendObservable(
-        node.fields,
-        _.flow(
-          _.mapKeys(k => `${index}.${k}`),
-          F.mapValuesIndexed((x, field) => initField(x, field, node))
-        )(node.arrayFields)
-      )
-    let startIndex = _.flow(_.keys, _.map(parseInt), _.max, x =>
-      _.isNil(x) ? 0 : x + 1
-    )(node.fields)
-    let endIndex = node.value.length
-    _.each(addSubfield, _.range(startIndex, endIndex))
-  }
+  let initialNode = _.cloneDeep({
+    fields,
+    value: _.mapValues('value', fields),
+  })
+  let currentNode = _.cloneDeep(initialNode)
 
-  let initField = ({ value = '', ...x }, field, parent) => {
-    let initialValue = parent ? _.get(field, parent.value) : _.cloneDeep(value)
-    let fieldPath = F.dotJoin([_.get('field', parent), field])
+  let addArraySubFields = node =>
+    _.each(index => {
+      let items = F.mapValuesIndexed(
+        (x, name) =>
+          _.merge(x, {
+            field: `${index}.${name}`,
+            path: [...node.path, index, name],
+          }),
+        node.items
+      )
+      node.fields.push(initFields(items))
+    }, _.range(node.fields.length, _.get('value.length', node)))
+
+  let addSubFields = (node, v) =>
+    extendObservable(node.fields, initFields(v, node.path))
+
+  let initFields = (fields, parentPath = []) =>
+    F.mapValuesIndexed(
+      (x, name) =>
+        initField({
+          ...x,
+          field: x.field || name,
+          path: x.path || [...parentPath, name],
+        }),
+      fields
+    )
+
+  let initField = config => {
     let node = observable({
-      field,
-      label: x.label || _.startCase(field),
+      label: config.label || _.startCase(config.field),
       get errors() {
-        return form.errors[fieldPath] || []
+        return form.errors[_.join('.', node.path)] || []
       },
       get isValid() {
         return !node.errors.length
       },
       get isDirty() {
-        return changed(toJS(node.value), toJS(initialValue))
+        return changed(_.get(node.path, initialNode.value), node.value)
       },
       reset() {
-        node.value = F.when(_.isUndefined, '')(initialValue)
+        let initialValue = _.get(node.path, initialNode.value)
+        if (_.isUndefined(initialValue)) {
+          currentNode.value = _.unset(node.path, currentNode.value)
+        } else {
+          F.setOn(node.path, _.cloneDeep(initialValue), currentNode.value)
+          if (config.items) {
+            node.fields = []
+            addArraySubFields(node)
+          } else {
+            node.fields = {}
+            addSubFields(
+              node,
+              _.get([...fieldPath(node.path), 'fields'], initialNode)
+            )
+          }
+        }
       },
-      validate: () => form.validate([fieldPath]),
+      validate: () => form.validate([_.join('.', node.path)]),
       clean() {
-        initialValue = node.value
+        F.setOn(node.path, _.cloneDeep(node.value), initialNode.value)
       },
-      // Value getter/setter ensure two-way binding between the parent's value
-      // and this node's value
+      ..._.omit('path', config),
+      fields: config.items ? [] : {},
+      getField: path => _.get(fieldPath(path), node),
       get value() {
-        return parent ? _.get(field, parent.value) : initialValue
+        return _.get(node.path, currentNode.value)
       },
       set value(x) {
-        parent ? F.setOn(field, x, parent.value) : (initialValue = x)
+        F.setOn(node.path, x, currentNode.value)
       },
-      ...x,
+      add(v) {
+        if (config.items) {
+          node.value.push(v)
+          addArraySubFields(node)
+        } else {
+          F.mergeOn(node.value, _.mapValues('value', v))
+          addSubFields(node, v)
+        }
+      },
+      remove(x) {
+        if (config.items) {
+          console.error('TODO', x)
+        } else {
+          console.error('TODO', x)
+        }
+      },
     })
-
-    if (x.arrayFields) {
-      // Extend node with methods that deal with nested array fields
-      extendObservable(node, {
-        fields: {},
-        add(x) {
-          node.value.push(x)
-          addMissingSubfields(node)
-        },
-        removeIndex(index) {
-          node.value.splice(index, 1)
-          F.eachIndexed(
-            (v, k) => parseInt(k) >= index && remove(node.fields, k),
-            node.fields
-          )
-          addMissingSubfields(node)
-        },
-        remove: x => node.removeIndex(_.findIndex(_.isEqual(x), node.value)),
-      })
-      addMissingSubfields(node)
-    }
-
-    return afterInitField(node, x)
+    node.path = config.path // To not make it an observable
+    if (config.items) addArraySubFields(node)
+    else addSubFields(node, config.fields)
+    return afterInitField(node, config)
   }
 
   let form = observable({
-    initField,
-    fields: {},
-    get flatFields() {
-      return _.omit('', F.flattenTree(x => x.fields)()(form))
-    },
-    getSnapshot: () => values(form.fields),
-    getNestedSnapshot: () => F.unflattenObject(values(form.fields)),
+    fields: initFields(currentNode.fields),
+    getField: path => _.get(fieldPath(path), form),
+    getValue: path => _.get(path, currentNode.value),
+    getSnapshot: () => F.flattenObject(currentNode.value),
+    getNestedSnapshot: () => F.unflattenObject(currentNode.value),
     getPatch: () =>
-      _.omitBy(_.isNil, unmerge(values(fields), values(form.fields))),
+      _.omitBy(_.isNil, unmerge(initialNode.value, currentNode.value)),
     submit: Command(() => {
       form.errors = {}
       form.submit.state.error = null
@@ -108,31 +131,35 @@ export default ({
       return F.getOrReturn('message', form.submit.state.error)
     },
     reset() {
-      _.invokeMap('reset', form.flatFields)
+      _.invokeMap('reset', form.fields)
       form.errors = {}
       form.submit.state.error = null
     },
     get isDirty() {
-      return _.some('isDirty', form.flatFields)
+      return _.some('isDirty', form.fields)
     },
     clean() {
-      _.invokeMap('clean', form.flatFields)
+      _.invokeMap('clean', form.fields)
     },
     // Validation
     errors: {},
     get isValid() {
       return _.isEmpty(form.errors)
     },
-    validate: fields =>
-      (form.errors = fields
-        ? { ..._.omit(fields, form.errors), ...validate(form, fields) }
-        : validate(form)),
-    add: x =>
-      extendObservable(
-        form.fields,
-        F.mapValuesIndexed((x, field) => initField(x, field), x)
-      ),
+    validate(fields) {
+      let flatFields = flattenFields(form)
+      form.errors = fields
+        ? {
+            ..._.omit(fields, form.errors),
+            ...validate(form, _.pick(fields, flatFields)),
+          }
+        : validate(form, flatFields)
+      return form.errors
+    },
+    add: x => addSubFields(form, x),
   })
-  form.add(fields)
   return form
 }
+
+export default Form
+export { validators }
