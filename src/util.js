@@ -17,27 +17,31 @@ let traverse = x => {
 }
 export let flattenFields = _.flow(F.flattenTree(traverse)(), _.omit(''))
 
-export let fieldPath = path => {
-  let sections = path
-  if (_.isString(path)) {
-    // Preserve quoted paths that we should not split on dots. Ex: 'foo."bar.baz"'
-    sections = _.split('"', path)
-    if (sections.length === 1) {
-      // No quoted sections were present. Split as usual
-      sections = _.flatMap(_.split('.'), sections)
-    } else {
-      // Sections that start or end with a dot are the unquoted ones
-      sections = _.flatMap(
-        x =>
-          _.startsWith('.', x) || _.endsWith('.', x) ? _.split('.', x) : [x],
-        sections
-      )
-    }
+// Ex:
+// - 'us."country.state".zip.0.street' -> ['us', 'country.state', 'zip', '0', 'street']
+// - ['us', 'country.state', 'zip', '0', 'street'] returns unchanged
+export let tokenizePath = path => {
+  if (!path) return []
+  if (!_.isArray(path)) {
+    let tokens = path.split('"')
+    let fn =
+      // If there's only one token, it is safe to split
+      tokens.length === 1
+        ? _.split('.')
+        : // tokens that start or end with a dot were not quoted previously and are
+          // safe to split
+          x =>
+            _.startsWith('.', x) || _.endsWith('.', x) ? _.split('.', x) : [x]
+    return _.compact(_.flatMap(fn, tokens))
   }
-  // If we've got index accessing (ex: 'foo.0.bar'), we don't append ".fields"
-  sections = _.flatMap(
-    x => (_.isNaN(parseInt(x)) ? [x, 'fields'] : [x]),
-    _.compact(sections)
-  )
-  return _.isEmpty(sections) ? [] : ['fields', ..._.dropRight(1, sections)]
+  return path
 }
+
+export let hasNumber = x => !_.isNaN(parseInt(x))
+
+export let buildFieldPath = path =>
+  _.reduce(
+    (acc, x) => _.concat(acc, hasNumber(_.last(acc)) ? [x] : ['fields', x]),
+    [],
+    tokenizePath(path)
+  )

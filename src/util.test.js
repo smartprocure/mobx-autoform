@@ -1,6 +1,6 @@
 import _ from 'lodash/fp'
 import Form from './index'
-import { flattenFields, fieldPath } from './util'
+import { flattenFields, buildFieldPath, tokenizePath } from './util'
 
 let fields = {
   location: {
@@ -39,8 +39,20 @@ it('flattenFields', () => {
   ])
 })
 
-it('fieldPath', () => {
-  expect(fieldPath('')).toEqual([])
+it('tokenizePath', () => {
+  expect(tokenizePath('')).toEqual([])
+  expect(tokenizePath('location."country.state".0.street.0.zip')).toEqual([
+    'location',
+    'country.state',
+    '0',
+    'street',
+    '0',
+    'zip',
+  ])
+})
+
+it('buildFieldPath', () => {
+  expect(buildFieldPath()).toEqual([])
   let arrayPath = ['location', 'country.state', '0', 'street']
   let stringPath = 'location."country.state".0.street'
   let result = [
@@ -52,6 +64,6 @@ it('fieldPath', () => {
     '0',
     'street',
   ]
-  expect(fieldPath(arrayPath)).toEqual(result)
-  expect(fieldPath(stringPath)).toEqual(result)
+  expect(buildFieldPath(arrayPath)).toEqual(result)
+  expect(buildFieldPath(stringPath)).toEqual(result)
 })

@@ -10,7 +10,7 @@ export let validatorJS = Validator => (form, fields) => {
       F.compactObject
     )(fields)
   )
-  validation.setAttributeNames(_.mapValues('label', form.flatFields))
+  validation.setAttributeNames(_.mapValues('label', fields))
   return validation.fails() ? validation.errors.all() : {}
 }
 
