@@ -38,63 +38,68 @@ export default ({
     errors: {},
   })
 
-  let initTree = (config, currentValue, currentPath = []) =>
+  let initTree = (field, fieldValue, fieldPath = []) =>
     F.reduceTree((node, key) => (_.isNumber(key) ? node : node.fields))(
       (tree, node, key, parents, parentsKeys) => {
         let path = [key, ...parentsKeys].reverse().slice(1)
+        // Array items are not fields
+        if (_.isNumber(key)) return tree
         // If items is present, there are nested array fields
         if (node.items)
           node.fields = _.times(
             () => node.items,
-            _.size(F.aliasIn(path, currentValue))
+            _.size(F.aliasIn(path, fieldValue))
           )
-        if (_.isNumber(key)) return tree // Array items are not fields
-        let fullPath = [...currentPath, ...path]
+        let fullPath = [...fieldPath, ...path]
+        // Root node
         if (_.isEmpty(key)) return initField(node, fullPath)
+        // Set new field on tree
         setField(path, initField({ ...node, field: key }, fullPath), tree)
         return tree
       }
-    )({})(config)
+    )({})(field)
 
-  let initField = (config, path) => {
+  let initField = (field, fieldPath) => {
     let pushNewField = () =>
       node.fields.push(
         F.mapValuesIndexed(
           (x, field) =>
             initField({ ...x, field }, [
-              ...path,
+              ...fieldPath,
               _.toString(node.value.length - 1),
               field,
             ]),
           node.items
         )
       )
-    let dotPath = _.join('.', path)
+    let dotPath = _.join('.', fieldPath)
     let node = observable({
-      ...config,
+      ...field,
       get isValid() {
         return _.isEmpty(node.errors)
       },
       get isDirty() {
         return changed(
-          toJS(_.get(['value', ...path], baseNode)),
-          toJS(_.get(['value', ...path], form))
+          toJS(_.get(['value', ...fieldPath], baseNode)),
+          toJS(_.get(['value', ...fieldPath], form))
         )
       },
-      getField: path => getField(path, node),
+      getField: fieldPath => getField(fieldPath, node),
       reset() {
-        node.value = clone(_.get(['value', ...path], baseNode))
-        node.errors = clone(_.get(_.join('.', ['errors', ...path]), baseNode))
+        node.value = clone(_.get(['value', ...fieldPath], baseNode))
+        node.errors = clone(
+          _.get(_.join('.', ['errors', ...fieldPath]), baseNode)
+        )
         node.fields = initTree(
-          getField(path, baseNode),
+          getField(fieldPath, baseNode),
           node.value,
-          path
+          fieldPath
         ).fields
       },
       clean() {
-        F.setOn(['value', ...path], clone(node.value), baseNode)
-        F.setOn(['errors', ...path], clone(node.errors), baseNode)
-        F.setOn(['fields', ...path], toJS(node.fields), baseNode) // Will omit setters/getters
+        F.setOn(['value', ...fieldPath], clone(node.value), baseNode)
+        F.setOn(['errors', ...fieldPath], clone(node.errors), baseNode)
+        F.setOn(['fields', ...fieldPath], toJS(node.fields), baseNode) // Will omit setters/getters
       },
       validate(fields) {
         let flat = flattenFields(node)
@@ -116,7 +121,7 @@ export default ({
           extendObservable(
             node.fields,
             F.mapValuesIndexed(
-              (x, field) => initField({ ...x, field }, [...path, field]),
+              (x, field) => initField({ ...x, field }, [...fieldPath, field]),
               x
             )
           )
@@ -128,37 +133,40 @@ export default ({
           : _.isNumber(x)
           ? [_.toString(x)]
           : x
-        let path = parentPath.splice(parentPath.length - 1)
-        // If last token of the parent path is a digit, move it to the child
-        // path, since array items are not fields
+        let fieldPath = parentPath.splice(parentPath.length - 1)
+        // If last token of the parent fieldPath is a digit, move it to the child
+        // fieldPath, since array items are not fields
         if (hasNumber(_.last(parentPath))) {
-          path = [...parentPath.splice(parentPath.length - 1), ...path]
+          fieldPath = [
+            ...parentPath.splice(parentPath.length - 1),
+            ...fieldPath,
+          ]
         }
         // If parentPath is not empty, call remove on the correct node
-        if (!_.isEmpty(parentPath)) node.getField(parentPath).remove(path)
+        if (!_.isEmpty(parentPath)) node.getField(parentPath).remove(fieldPath)
         // Remove array item
-        else if (path.length === 1 && hasNumber(path[0])) {
-          let index = parseInt(path[0])
+        else if (fieldPath.length === 1 && hasNumber(fieldPath[0])) {
+          let index = parseInt(fieldPath[0])
           node.value.splice(index, 1)
           _.times(pushNewField, node.fields.splice(index).length - 1)
         }
-        // Remove object field. Field can be inside an array item, so the path
+        // Remove object field. Field can be inside an array item, so the fieldPath
         // could be "0.name" and this will still  work
         else {
-          F.unsetOn(path, node.value)
-          F.unsetOn(path, node.fields)
+          F.unsetOn(fieldPath, node.value)
+          F.unsetOn(fieldPath, node.fields)
         }
       },
     })
     // Root node doesn't have a field set
-    if (config.field) {
+    if (field.field) {
       extendObservable(node, {
-        label: config.label || _.startCase(config.field),
+        label: field.label || _.startCase(field.field),
         get value() {
-          return _.get(path, form.value)
+          return _.get(fieldPath, form.value)
         },
         set value(x) {
-          F.setOn(path, x, form.value)
+          F.setOn(fieldPath, x, form.value)
         },
         get errors() {
           return _.getOr([], dotPath, form.errors)
@@ -168,7 +176,7 @@ export default ({
         },
       })
     }
-    return afterInitField(node, config)
+    return afterInitField(node, field)
   }
 
   let form = observable(initTree(baseNode, baseNode.value))
