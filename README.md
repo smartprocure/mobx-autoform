@@ -24,8 +24,17 @@ let form = Form({
     password: {
       validator: x => !x && ['Password is required'],
     },
+    name: {
+      // Nested fields definition
+      fields: {
+        // Dotted properties are also supported
+        'first.name': {},
+        'last.name': {},
+      }
+    },
     addresses: {
       value: [],
+      // Field configuration for new array items
       items: {
         street: {
           label: 'Street Address',
@@ -39,6 +48,22 @@ let form = Form({
   },
 })
 
+// Accessing fields
+// Access fields manually or through the `getField` method
+// Both string and array notation can be used
+form.getField('addresses.0.street')
+form.getField(['addresses', 0, 'street'])
+form.getField('addresses').getField('0.street')
+form.fields.addresses.fields[0].street
+// Dotted paths are supported as long as they're wrapped in double quotes for 
+// the string notation
+form.getField('name."first.name"')
+form.getField('name').getField('"first.name"')
+form.getField(['name', 'first.name'])
+form.fields.name.fields['first.name']
+// No path will return the node
+form.getField() === form
+
 // Everything is just observables and computeds, use mobx as normal
 let emailChanges = 0
 reaction(
@@ -48,14 +73,13 @@ reaction(
 
 // Mutation is straightforward because it's just mobx
 form.fields.email.value = 'new@email.com'
-// form.fields.email.isDirty == true
-// emailChanges == 1
+form.fields.email.isDirty === true
+// emailChanges === 1
 await form.submit()
-form.isValid // false
-// form.fields.password.errors == ['Password is required']
+// form.isValid === false
+// form.fields.password.errors === ['Password is required']
 
-// Nested array fields
-
+// Array fields
 form.fields.addresses.add({ street: '401 Meridian St.' })
 form.fields.addresses.add({ street: '1210 Jefferson Ave.' })
 // form.fields.addresses.isDirty === true

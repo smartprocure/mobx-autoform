@@ -1,69 +1,20 @@
 import _ from 'lodash/fp'
-import Form from './index'
-import { flattenFields, buildFieldPath, tokenizePath } from './util'
-
-let fields = {
-  location: {
-    fields: {
-      'country.state': {},
-      addresses: {
-        validator: () => 'Invalid address',
-        items: {
-          street: {},
-          tenants: {
-            items: {
-              name: { validator: () => 'Invalid name' },
-              age: {},
-            },
-          },
-        },
-      },
-    },
-    value: {
-      addresses: [{ street: 'Meridian', tenants: [{ name: 'John' }] }],
-    },
-  },
-}
-
-let form = Form({ fields })
-
-it('flattenFields', () => {
-  expect(_.keys(flattenFields(form))).toEqual([
-    'location',
-    'location.country.state',
-    'location.addresses',
-    'location.addresses.0.street',
-    'location.addresses.0.tenants',
-    'location.addresses.0.tenants.0.name',
-    'location.addresses.0.tenants.0.age',
-  ])
-})
+import { buildFieldPath, tokenizePath } from './util'
 
 it('tokenizePath', () => {
+  expect(tokenizePath()).toEqual([])
+  expect(tokenizePath([])).toEqual([])
   expect(tokenizePath('')).toEqual([])
-  expect(tokenizePath('location."country.state".0.street.0.zip')).toEqual([
-    'location',
-    'country.state',
-    '0',
-    'street',
-    '0',
-    'zip',
-  ])
+  expect(tokenizePath(0)).toEqual(['0'])
+  expect(tokenizePath('0')).toEqual(['0'])
+  expect(tokenizePath('a.["b.c"].0.d')).toEqual(['a', '["b.c"]', '0', 'd'])
+  expect(tokenizePath('["a.b"]')).toEqual(['["a.b"]'])
 })
 
 it('buildFieldPath', () => {
   expect(buildFieldPath()).toEqual([])
-  let arrayPath = ['location', 'country.state', '0', 'street']
-  let stringPath = 'location."country.state".0.street'
-  let result = [
-    'fields',
-    'location',
-    'fields',
-    'country.state',
-    'fields',
-    '0',
-    'street',
-  ]
-  expect(buildFieldPath(arrayPath)).toEqual(result)
-  expect(buildFieldPath(stringPath)).toEqual(result)
+  let path = ['a', '["b.c"]', 0, 'd']
+  let result = ['a', 'fields', '["b.c"]', 'fields', '0', 'fields', 'd']
+  expect(buildFieldPath(path)).toEqual(result)
+  expect(buildFieldPath(_.join('.', path))).toEqual(result)
 })
