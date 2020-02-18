@@ -2,19 +2,16 @@ import F from 'futil'
 import _ from 'lodash/fp'
 import { observable, extendObservable, toJS, isObservable } from 'mobx'
 import * as validators from './validators'
-import { buildFieldPath, tokenizePath } from './util'
+import { buildPath, tokenizePath, joinPaths, pickFields } from './util'
 export { validators }
 
 let clone = x => (isObservable(x) ? observable(toJS(x)) : _.cloneDeep(x))
 let unmerge = _.flow(F.simpleDiff, _.mapValues('to'))
 let changed = (x, y) => !_.isEqual(x, y) && !(F.isBlank(x) && F.isBlank(y))
 let Command = F.aspects.command(x => y => extendObservable(y, x))
-let joinPaths = (...paths) =>
-  _.flow(
-    _.map(x => (x.includes('.') && !x.includes('[') ? `["${x}"]` : x)),
-    _.join('.')
-  )(paths)
 let getOrValue = (path, value) => _.getOr(value, path, value)
+let buildFieldPath = path =>
+  _.compact(F.intersperse('fields', tokenizePath(path)))
 
 export default ({
   submit,
@@ -22,12 +19,9 @@ export default ({
   afterInitField = x => x,
   ...config
 }) => {
-  let buildPath = (node, key, parents, parentsKeys) =>
-    [key, ...parentsKeys].reverse().slice(1)
-
   let initTree = (field, fieldValue, fieldPath = []) =>
-    F.reduceTree(x => x.fields)((tree, node, key, parents, parentsKeys) => {
-      let path = buildPath(node, key, parents, parentsKeys)
+    F.reduceTree(x => x.fields)((tree, node, key, ...x) => {
+      let path = buildPath(node, key, ...x)
       if (node.items)
         node.fields = _.times(
           () => node.items,
@@ -36,12 +30,12 @@ export default ({
       let fullPath = [...fieldPath, ...path]
       if (_.isNil(key)) return initField(node, fullPath)
       F.setOn(
-        buildFieldPath(path),
+        ['fields', ...buildFieldPath(path)],
         initField({ ...node, field: key }, fullPath),
-        tree.fields
+        tree
       )
       return tree
-    })({ fields: {} })(field)
+    })({})(field)
 
   let initFields = (fields, fieldValue, fieldPath = []) =>
     F.mapValuesIndexed(
@@ -61,7 +55,7 @@ export default ({
           toJS(getOrValue(fieldPath, form.value))
         )
       },
-      getField: path => _.get(joinPaths(...buildFieldPath(path)), node.fields),
+      getField: path => _.get(joinPaths(buildFieldPath(path)), node.fields),
       reset() {
         if (!_.isEmpty(fieldPath)) form.submit.state.error = null // Lil hack
         node.errors = clone(getOrValue(_.join('.', fieldPath), baseNode.errors))
@@ -92,14 +86,10 @@ export default ({
         F.setOn(['fields', ...fieldPath], toJS(node.fields), baseNode)
       },
       validate(fields) {
-        let dotPath = _.join('.', fieldPath)
-        let flat = F.flattenTree(x => x.fields)((...x) =>
-          _.join('.', buildPath(...x))
-        )(node)
-        flat = _.omit('', flat)
-        let picked = _.isEmpty(fields) ? flat : _.pick(fields, flat)
-        if (_.isEmpty(picked)) picked = { [dotPath]: node }
-        else if (dotPath) picked = _.mapKeys(k => `${dotPath}.${k}`, picked)
+        let picked = pickFields(
+          form,
+          fields || _.compact([_.join('.', fieldPath)])
+        )
         form.errors = {
           ..._.omit(_.keys(picked), form.errors),
           ...validate(form, picked),
@@ -115,7 +105,7 @@ export default ({
             let field = initTree(
               { ...node.items, field: index },
               node.value[index],
-              [...fieldPath, index]
+              [...fieldPath, _.toString(index)]
             )
             node.fields.push(field)
           }, _.range(lengthBefore, node.value.length))

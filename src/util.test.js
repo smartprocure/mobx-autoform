@@ -1,5 +1,4 @@
-import _ from 'lodash/fp'
-import { buildFieldPath, tokenizePath } from './util'
+import { tokenizePath, joinPaths, pickFields } from './util'
 
 it('tokenizePath', () => {
   expect(tokenizePath()).toEqual([])
@@ -11,10 +10,28 @@ it('tokenizePath', () => {
   expect(tokenizePath('["a.b"]')).toEqual(['["a.b"]'])
 })
 
-it('buildFieldPath', () => {
-  expect(buildFieldPath()).toEqual([])
-  let path = ['a', '["b.c"]', 0, 'd']
-  let result = ['a', 'fields', '["b.c"]', 'fields', '0', 'fields', 'd']
-  expect(buildFieldPath(path)).toEqual(result)
-  expect(buildFieldPath(_.join('.', path))).toEqual(result)
+it('joinPaths', () => {
+  expect(joinPaths()).toEqual('')
+  expect(joinPaths(['a', '["b.c"]', 0, 'd'])).toEqual('a.["b.c"].0.d')
+  expect(joinPaths(['a', 'b.c', 0, 'd'])).toEqual('a.["b.c"].0.d')
+})
+
+it('pickFields', () => {
+  let tree = {
+    fields: {
+      a: {
+        fields: {
+          'a.a': {},
+          'a.b': {},
+        },
+      },
+    },
+  }
+  expect(pickFields({})).toEqual({})
+  expect(pickFields(tree)).toEqual({
+    a: tree.fields.a,
+    'a.a.a': {},
+    'a.a.b': {},
+  })
+  expect(pickFields(tree, 'a.a.a')).toEqual({ 'a.a.a': {} })
 })
