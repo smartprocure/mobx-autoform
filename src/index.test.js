@@ -1,43 +1,45 @@
-import { reaction, isObservable, toJS } from 'mobx'
-import Form from './index'
+import F from 'futil'
 import _ from 'lodash/fp'
+import { reaction, isObservable, observable } from 'mobx'
+import Form from './index'
+import { buildPath, toJSRecurse } from './util'
 
 require('util').inspect.defaultOptions.depth = null
 
-describe('Form', () => {
-  let dispose = _.noop
-  let form = null
+let walkNodes = fn =>
+  F.walk(x => x.fields)((node, ...args) => {
+    fn(node, buildPath(node, ...args))
+  })
 
-  beforeEach(() => {
-    dispose()
-    form = Form({
-      fields: {
-        location: {
-          value: {
-            'country.state': { zip: '07016' },
-            addresses: [{ street: 'Meridian', tenants: ['John'] }],
-          },
-          fields: {
-            'country.state': {
-              label: 'Dotted field name',
-              fields: {
-                zip: {
-                  validator: () => 'Invalid zip',
-                },
+let dispose = _.noop
+let form = null
+
+beforeEach(() => {
+  dispose()
+  form = Form({
+    fields: {
+      location: {
+        fields: {
+          'country.state': {
+            label: 'Dotted field name',
+            fields: {
+              zip: {
+                validator: () => 'Invalid zip',
               },
+              name: {},
             },
-            addresses: {
-              label: 'Array field',
-              items: {
-                label: 'Item field is a record',
-                fields: {
-                  street: {},
-                  tenants: {
-                    label: 'Array field',
-                    items: {
-                      label: 'Item field is a primitive',
-                      validator: () => 'Invalid tenant',
-                    },
+          },
+          addresses: {
+            label: 'Array field',
+            itemField: {
+              label: 'Item field is a record',
+              fields: {
+                street: {},
+                tenants: {
+                  label: 'Array field',
+                  itemField: {
+                    label: 'Item field is a primitive',
+                    validator: () => 'Invalid tenant',
                   },
                 },
               },
@@ -45,322 +47,318 @@ describe('Form', () => {
           },
         },
       },
+    },
+    value: {
+      location: {
+        'country.state': { zip: '07016' },
+        addresses: [{ street: 'Meridian', tenants: ['John'] }, {}],
+      },
+    },
+  })
+})
+
+describe('Fields were correctly initialized', () => {
+  it.each([
+    'location.["country.state"]', // Nested field
+    'location.addresses.0', // Array item field
+    'location.addresses.0.street', // Record array item field
+    'location.addresses.0.tenants.0', // Scalar array item field
+  ])('%s', path => {
+    let field = form.getField(path)
+    expect(field).not.toBeUndefined()
+    expect(field.value).toBe(_.get(path, form.value))
+  })
+})
+
+let initialValue = {
+  location: {
+    'country.state': { zip: '07016', name: undefined },
+    addresses: [
+      { street: 'Meridian', tenants: ['John'] },
+      { street: undefined, tenants: undefined },
+    ],
+  },
+}
+
+it('Value was correctly initialized', () => {
+  expect(toJSRecurse(form.value)).toStrictEqual(initialValue)
+})
+
+describe('add()', () => {
+  it('Does not allow adding on scalar fields', () => {
+    expect(() =>
+      form.getField('location.["country.state"].zip').add({})
+    ).toThrow()
+  })
+
+  describe('Array field', () => {
+    let address = { street: undefined, tenants: undefined }
+    it.each([
+      // Array of records
+      ['location.addresses', undefined, address],
+      ['location.addresses', null, address],
+      ['location.addresses', {}, address],
+      ['location.addresses', { extra: 'val' }, { ...address, extra: 'val' }],
+      ['location.addresses', { street: 'val' }, { ...address, street: 'val' }],
+      // Array of scalars
+      ['location.addresses.1.tenants', undefined, undefined],
+      ['location.addresses.1.tenants', null, null],
+      ['location.addresses.1.tenants', 'Jack', 'Jack'],
+      ['location.addresses.1.tenants', { extra: 'val' }, { extra: 'val' }],
+    ])('%s: add %o', (path, value, expected) => {
+      let field = form.getField(path)
+      field.add(value)
+      expect(_.last(field.value)).toStrictEqual(expected)
+      expect(_.last(field.fields).value).toStrictEqual(expected)
+      expect(_.last(_.get(path, form.value))).toStrictEqual(expected)
+      if (field.itemField.fields)
+        expect(isObservable(_.last(field.value))).toBe(true)
     })
   })
 
-  it('Initialize nested fields with correct values', () => {
-    let path = 'location.addresses.0.street'
-    let street = form.getField(path)
-    expect(street).not.toBeUndefined()
-    expect(street.value).toBe(_.get(path, form.value))
-    path = 'location.addresses.0.tenants.0'
-    let name = form.getField(path)
-    expect(name).not.toBeUndefined()
-    expect(name.value).toBe(_.get(path, form.value))
-    path = ['location', 'country.state', 'zip']
-    let zip = form.getField(path)
-    expect(zip).not.toBeUndefined()
-    expect(zip.value).toBe(_.get(path, form.value))
-  })
-
-  it('Two-way binding between nested field value and parent value', () => {
-    let path = 'location.addresses.0.tenants'
-    let name = form.getField(`${path}.0`)
-    let parent = _.get(path, form.value)
-    name.value = 'Alex'
-    expect(parent[0]).toBe(name.value)
-    parent.name = 'Meridian'
-    expect(name.value).toBe(parent[0])
-  })
-
-  it('Add new array field', () => {
-    let path = 'location.addresses'
-    let addresses = form.getField(path)
-    let value = { street: 'Washington' }
-    addresses.add(value)
-    let added = _.last(addresses.value)
-
-    // Value was added correctly
-    expect(added).not.toBeUndefined()
-    expect(isObservable(added)).toBe(true)
-    expect(toJS(added)).toEqual(value)
-    expect(_.last(_.get(path, form.value))).toBe(added)
-
-    // Field was added correctly
-    let street = form.getField('location.addresses.1.street')
-    expect(street).not.toBeUndefined()
-    expect(street.value).toBe('Washington')
-  })
-
-  it('Add new nested array field', () => {
-    let path = 'location.addresses.0.tenants'
-    let tenants = form.getField(path)
-    let value = 'Paul'
-    tenants.add(value)
-    let added = _.last(tenants.value)
-
-    // Value was added correctly
-    expect(added).not.toBeUndefined()
-    expect(added).toEqual(value)
-    expect(_.last(_.get(path, form.value))).toBe(added)
-
-    // Field was added correctly
-    let name = form.getField(`${path}.1`)
-    expect(name).not.toBeUndefined()
-    expect(name.value).toBe('Paul')
-  })
-
-  it('Add new object field', () => {
-    let path = ['location', 'country.state']
-    let state = form.getField(path)
-    let value = { beach: { value: 'Florida' } }
-    state.add(value)
-    let added = state.value.beach
-
-    // Value was added correctly
-    expect(added).not.toBeUndefined()
-    expect(isObservable(added)).toBe(false) // Primitives are not observable
-    expect(added).toEqual('Florida')
-    expect(_.get(path, form.value).beach).toBe(added)
-
-    // Field was added correctly
-    let beach = form.getField(path).getField('beach')
-    expect(beach).not.toBeUndefined()
-    expect(beach.value).toBe('Florida')
-  })
-
-  it('Remove array field', () => {
-    let location = form.getField('location')
-
-    // Remove object field
-    let path = 'addresses.0.tenants.0'
-    expect(location.getField(path)).not.toBeUndefined()
-    expect(_.get(path, location.value)).not.toBeUndefined()
-    location.remove(path)
-    expect(location.getField(path)).toBeUndefined()
-    expect(_.get(path, location.value)).toBeUndefined()
-
-    // Remove array item
-    let addresses = location.getField('addresses')
-    addresses.add({ street: 'Washington' })
-    addresses.remove(0)
-    expect(toJS(addresses.value)).toEqual([{ street: 'Washington' }])
-    expect(_.get('location.addresses', form.value)).toBe(addresses.value)
-    expect(addresses.fields.length).toEqual(1)
-    expect(_.get('0.street', addresses.value)).toBe('Washington')
-  })
-
-  describe('Field attributes', () => {
-    let name = null
-
-    beforeEach(() => {
-      name = form.getField('location.addresses.0.tenants.0')
+  describe('Object field', () => {
+    let fieldsValues = field => toJSRecurse(_.mapValues('value', field.fields))
+    it.each([
+      ['location.["country.state"]', undefined, undefined],
+      ['location.["country.state"]', null, undefined],
+      ['location.["country.state"]', { a: {} }, { a: undefined }],
+      ['location.["country.state"]', { a: { value: 'b' } }, { a: 'b' }],
+      // Top-level node (form)
+      [undefined, { top: { value: 'field' } }, { top: 'field' }],
+    ])('%s: add %o', (path, value, expected) => {
+      let field = form.getField(path)
+      let before = fieldsValues(field)
+      field.add(value)
+      expect(fieldsValues(field)).toStrictEqual({ ...before, ...expected })
+      expect(toJSRecurse(field.value)).toStrictEqual({ ...before, ...expected })
     })
+  })
+})
 
-    it('errors | isValid', () => {
-      expect(name.isValid).toEqual(true)
-      let isValid = jest.fn()
-      let errors = jest.fn()
-      dispose = _.over(
-        reaction(
-          () => name.isValid,
-          x => isValid(x)
-        ),
-        reaction(
-          () => name.errors,
-          x => errors(x)
-        )
+describe('remove()', () => {
+  describe('Array field', () => {
+    it.each([
+      // Non-empty array
+      ['location.addresses', 2, 0], // out of bounds
+      ['location.addresses', 0, 1],
+      // Empty array
+      ['location.addresses.1.tenants', 2, 0], // out of bounds
+      ['location.addresses.1.tenants', 0, 0],
+      [undefined, 0, 0], // Top-level node (form)
+    ])('%s: remove [%i]', (path, index, removedSize) => {
+      let field = form.getField(path)
+      let lengthBefore = _.size(field.value)
+      field.remove(index)
+      expect(_.size(field.value)).toBe(lengthBefore - removedSize)
+      expect(_.size(field.fields)).toBe(_.size(field.value))
+      F.eachIndexed(
+        (x, i) => expect(x.value).toBe(field.value[i]),
+        field.fields
       )
-      name.validate()
-      expect(errors).toHaveBeenCalledWith('Invalid tenant')
-      expect(isValid).toHaveBeenCalledWith(false)
-      form.reset()
-      expect(errors).toHaveBeenCalledWith([])
-      expect(isValid).toHaveBeenCalledWith(true)
-    })
-
-    it('isDirty', () => {
-      expect(name.isDirty).toEqual(false)
-      let handler = jest.fn()
-      dispose = reaction(
-        () => name.isDirty,
-        x => handler(x)
-      )
-      name.value = 'New'
-      expect(handler).toHaveBeenCalledWith(true)
-    })
-
-    it('reset()', () => {
-      // Resets value
-      expect(name.isDirty).toEqual(false)
-      name.value = 'New'
-      expect(name.isDirty).toEqual(true)
-      name.reset()
-      expect(name.isDirty).toEqual(false)
-      expect(name.value).toEqual('John')
-
-      // Resets subfields
-      let state = form.getField('location.["country.state"]')
-      state.add({ newField: { label: 'New name' } })
-      expect(state.getField('newField')).not.toBeUndefined()
-      state.reset()
-      expect(state.isDirty).toEqual(false)
-      expect(state.getField('newField')).toBeUndefined()
-
-      // Resets array subfields
-      let addresses = form.getField('location.addresses')
-      addresses.add({ street: 'Laurence' })
-      addresses.reset()
-      expect(addresses.isDirty).toEqual(false)
-      expect(addresses.fields.length).toBe(1)
-      expect(addresses.getField('0.street').value).toBe('Meridian')
-      expect(addresses.value).toEqual([
-        { street: 'Meridian', tenants: ['John'] },
-      ])
-    })
-
-    it('validate()', () => {
-      expect(name.validate()).toEqual({
-        'location.addresses.0.tenants.0': 'Invalid tenant',
-      })
-    })
-
-    it('clean()', () => {
-      expect(name.isDirty).toEqual(false)
-      name.value = 'New'
-      expect(name.isDirty).toEqual(true)
-      name.clean()
-      expect(name.isDirty).toEqual(false)
-      expect(name.value).toEqual('New')
-      name.value = 'John'
-      name.clean()
-
-      // Cleans subfields
-      let state = form.getField('location.["country.state"]')
-      state.add({ newField: { label: 'New name' } })
-      expect(state.getField('newField')).not.toBeUndefined()
-      state.clean()
-      expect(state.isDirty).toEqual(false)
-      expect(state.getField('newField')).not.toBeUndefined()
-
-      // Cleans array subfields
-      let addresses = form.getField('location.addresses')
-      addresses.add({ street: 'Laurence' })
-      addresses.clean()
-      expect(addresses.isDirty).toEqual(false)
-      expect(addresses.getField('1.street')).not.toBeUndefined()
-      expect(addresses.value).toEqual([
-        { street: 'Meridian', tenants: ['John'] },
-        { street: 'Laurence' },
-      ])
     })
   })
 
-  describe('Form attributes', () => {
-    it('getSnapshot()', () => {
-      expect(form.getSnapshot()).toEqual({
-        'location.country.state.zip': '07016',
-        'location.addresses.0.street': 'Meridian',
-        'location.addresses.0.tenants.0': 'John',
-      })
+  describe('Object field', () => {
+    it.each([
+      ['location', '["country.state"].zip'], // Non-empty object
+      ['location', 'non.existing'], // Empty object
+      [undefined, 'location.["country.state"]'], // Top-level node (form)
+    ])('%s: remove %s', (path, pathToRemove) => {
+      let field = form.getField(path)
+      field.remove(pathToRemove)
+      expect(field.getField(pathToRemove)).toBeUndefined()
     })
+  })
+})
 
-    it('getNestedSnapshot()', () => {
-      expect(form.getNestedSnapshot()).toEqual({
-        location: {
-          'country.state': {
-            zip: '07016',
+describe('reset()', () => {
+  describe('value', () => {
+    it.each([
+      [
+        undefined, // Path (form)
+        undefined, // Reset to initial value
+        {
+          location: {
+            'country.state': { zip: '07016', name: undefined },
+            addresses: [
+              { street: 'Meridian', tenants: ['John'] },
+              { street: undefined, tenants: undefined },
+            ],
           },
-          addresses: [
-            {
-              street: 'Meridian',
-              tenants: ['John'],
-            },
-          ],
         },
-      })
-      form.getField('location.addresses').remove(0)
-      expect(form.getNestedSnapshot()).toEqual({
-        location: {
-          'country.state': {
-            zip: '07016',
+      ],
+      [
+        undefined, // Path (form)
+        { reset: { this: true } }, // Reset value
+        {
+          location: {
+            'country.state': { zip: undefined, name: undefined },
+            addresses: undefined,
           },
-          addresses: [],
+          reset: { this: true },
         },
-      })
-    })
+      ],
+      [
+        'location.addresses', // Path
+        undefined, // Reset to initial value
+        [
+          { street: 'Meridian', tenants: ['John'] },
+          { street: undefined, tenants: undefined },
+        ],
+      ],
+      // Reset form to this value
+      ['location.addresses', [], []],
+    ])('reset path "%s" to "%o"', (path, value, expected) => {
+      let field = form.getField(path)
 
-    it('getPatch()', () => {
-      let addresses = form.getField('location.addresses')
-      addresses.add({ street: 'Washington' })
-      expect(form.getPatch()).toEqual({
-        'location.addresses.1.street': 'Washington',
-      })
-      addresses.getField('0.street').value = 'Jefferson'
-      expect(form.getPatch()).toEqual({
-        'location.addresses.0.street': 'Jefferson',
-        'location.addresses.1.street': 'Washington',
-      })
-      form.clean()
-      expect(form.getPatch()).toEqual({})
-      addresses.getField('0.street').value = 'Jefferson'
-      form.reset()
-      expect(form.getPatch()).toEqual({})
+      // Mutate all nodes
+      walkNodes(x => {
+        if (x.itemField) x.add('New')
+        else if (!_.isPlainObject(x.fields)) x.value = 'New'
+      })(field)
 
-      let state = form.getField('location.["country.state"]')
-      state.add({ capital: {} })
-      expect(form.getPatch()).toEqual({})
-      state.getField('capital').value = 'Tallahase'
-      expect(form.getPatch()).toEqual({
-        'location.country.state.capital': 'Tallahase',
-      })
-    })
+      // Reset to value
+      field.reset(value)
 
-    it('reset()', () => {
-      let path = ['location', 'addresses']
-      form.getField(path).add({ street: 'New' })
-      form.reset()
-      expect(form.getField(path).value.length).toBe(1)
-      path = 'location.addresses.0.street'
-      form.getField(path).value = 'New'
-      form.reset()
-      expect(form.getField(path).value).toBe('Meridian')
-      expect(_.get(path, form.value)).toBe('Meridian')
-    })
+      // Check values were reset
+      expect(toJSRecurse(field.value)).toStrictEqual(expected)
 
-    it('isDirty', () => {
-      expect(form.isDirty).toBe(false)
-      let handler = jest.fn()
-      dispose = reaction(
-        () => form.isDirty,
-        x => handler(x)
-      )
-      form.getField('location.addresses.0.street').value = 'New'
-      expect(handler).toHaveBeenCalledWith(true)
-      form.reset()
-      expect(handler).toHaveBeenCalledWith(false)
+      // Check array fields were reset
+      walkNodes((node, p) => {
+        if (node.itemField) {
+          let value = _.has(p, expected) ? _.get(p, expected) : expected
+          expect(_.size(node.fields)).toBe(_.size(value))
+        }
+      })(field)
     })
+  })
 
-    it('clean()', () => {
-      expect(form.isDirty).toBe(false)
-      form.getField('location.addresses.0.street').value = 'New'
-      expect(form.isDirty).toBe(true)
-      form.clean()
-      expect(form.isDirty).toBe(false)
-    })
+  describe('errors', () => {})
+})
 
-    it('validate() | isValid', () => {
-      expect(form.isValid).toBe(true)
-      expect(form.validate()).toEqual({
-        'location.country.state.zip': 'Invalid zip',
-        'location.addresses.0.tenants.0': 'Invalid tenant',
-      })
-      expect(form.isValid).toBe(false)
+describe('validate()', () => {
+  it('field', () => {
+    let name = form.getField('location.addresses.0.tenants.0')
+    expect(name.validate()).toStrictEqual({
+      'location.addresses.0.tenants.0': 'Invalid tenant',
     })
+  })
+  it('form', () => {
+    expect(form.isValid).toBe(true)
+    expect(form.validate()).toStrictEqual({
+      'location.country.state.zip': 'Invalid zip',
+      'location.addresses.0.tenants.0': 'Invalid tenant',
+    })
+    expect(form.isValid).toBe(false)
+  })
+})
 
-    it('add()', () => {
-      form.add({ newField: { label: 'New name' } })
-      expect(form.getField('newField')).not.toBeUndefined()
+// it('errors | isValid', () => {
+//   let name = form.getField('location.addresses.0.tenants.0')
+//   expect(name.isValid).toBe(true)
+//   let isValid = jest.fn()
+//   let errors = jest.fn()
+//   dispose = _.over(
+//     reaction(
+//       () => name.isValid,
+//       x => isValid(x)
+//     ),
+//     reaction(
+//       () => name.errors,
+//       x => errors(x)
+//     )
+//   )
+//   name.validate()
+//   expect(errors).toHaveBeenCalledWith('Invalid tenant')
+//   expect(isValid).toHaveBeenCalledWith(false)
+//   form.reset()
+//   expect(errors).toHaveBeenCalledWith([])
+//   expect(isValid).toHaveBeenCalledWith(true)
+// })
+
+describe('isDirty', () => {
+  it('field', () => {
+    let name = form.getField('location.addresses.0.tenants.0')
+    expect(name.isDirty).toBe(false)
+    let handler = jest.fn()
+    dispose = reaction(
+      () => name.isDirty,
+      x => handler(x)
+    )
+    name.value = 'New'
+    expect(handler).toHaveBeenCalledWith(true)
+  })
+  it('form', () => {
+    expect(form.isDirty).toBe(false)
+    let handler = jest.fn()
+    dispose = reaction(
+      () => form.isDirty,
+      x => handler(x)
+    )
+    form.getField('location.addresses.0.street').value = 'New'
+    expect(handler).toHaveBeenCalledWith(true)
+    form.reset()
+    expect(handler).toHaveBeenCalledWith(false)
+  })
+})
+
+it('getSnapshot()', () => {
+  expect(form.getSnapshot()).toStrictEqual({
+    'location.country.state.zip': '07016',
+    'location.addresses.0.street': 'Meridian',
+    'location.addresses.0.tenants.0': 'John',
+  })
+})
+
+it('getNestedSnapshot()', () => {
+  expect(form.getNestedSnapshot()).toStrictEqual({
+    location: {
+      'country.state': { zip: '07016' },
+      addresses: [{ street: 'Meridian', tenants: ['John'] }],
+    },
+  })
+  form.getField('location.addresses').remove(0)
+  expect(form.getNestedSnapshot()).toStrictEqual({
+    location: { 'country.state': { zip: '07016' } },
+  })
+})
+
+describe('getPatch()', () => {
+  it('Array fields', () => {
+    let addresses = form.getField('location.addresses')
+    addresses.add()
+    // Ignores undefined values
+    expect(form.getPatch()).toStrictEqual({})
+    // Picks up new values
+    addresses.getField('2.street').value = 'Washington'
+    expect(form.getPatch()).toStrictEqual({
+      'location.addresses.2.street': 'Washington',
     })
+    // Works after clean()
+    form.clean()
+    expect(form.getPatch()).toStrictEqual({})
+    // Works after reset()
+    addresses.getField('0.street').value = 'Jefferson'
+    form.reset()
+    expect(form.getPatch()).toStrictEqual({})
+  })
+
+  it('Object fields', () => {
+    let state = form.getField('location.["country.state"]')
+    state.add({ capital: {} })
+    // Ignores undefined values
+    expect(form.getPatch()).toStrictEqual({})
+    // Picks up new values
+    state.getField('capital').value = 'Tallahase'
+    expect(form.getPatch()).toStrictEqual({
+      'location.country.state.capital': 'Tallahase',
+    })
+    // Works after clean()
+    form.clean()
+    expect(form.getPatch()).toStrictEqual({})
+    // Works after reset()
+    state.getField('capital').value = 'Tallahase'
+    form.reset()
+    expect(form.getPatch()).toStrictEqual({})
   })
 })

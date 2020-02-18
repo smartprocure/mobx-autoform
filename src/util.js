@@ -1,5 +1,6 @@
 import F from 'futil'
 import _ from 'lodash/fp'
+import { toJS } from 'mobx'
 
 export let tokenizePath = path =>
   _.map(
@@ -20,11 +21,38 @@ export let joinPaths = _.flow(
 )
 
 export let buildPath = (x, xk, p, pk) =>
-  [_.toString(xk), ...pk].reverse().slice(1)
+  _.map(_.toString, [xk, ...pk].reverse().slice(1))
 
-export let pickFields = (node, fields = []) => {
+export let pickFields = (node, paths = []) => {
   let flat = F.flattenTree(x => x.fields)((...x) =>
     _.join('.', buildPath(...x))
   )(node)
-  return _.isEmpty(fields) ? _.omit('', flat) : _.pick(fields, flat)
+  paths = _.compact(paths)
+  return _.isEmpty(paths) ? _.omit('', flat) : _.pick(paths, flat)
 }
+
+let reduceTreePost = (next = F.traverse) =>
+  _.curry((f, result, tree) => {
+    F.walk(next)(_.noop, (...x) => {
+      result = f(result, ...x)
+    })(tree)
+    return result
+  })
+
+let filterCollection = _.curryN(2, (fn, x) =>
+  _.isPlainObject(x)
+    ? _.pickBy(fn, x)
+    : _.isArray(x)
+    ? _.filter(fn, x)
+    : undefined
+)
+
+let isLeave = _.negate(F.isTraversable)
+
+export let filterTree = _.curryN(2, (fn, v) =>
+  reduceTreePost(filterCollection(fn))((acc, x, ...args) =>
+    isLeave(x) ? F.setOn(buildPath(x, ...args), x, acc) : acc
+  )(_.isArray(v) ? [] : _.isPlainObject(v) ? {} : v)(v)
+)
+
+export let toJSRecurse = x => toJS(x, { recurseEverything: true })
