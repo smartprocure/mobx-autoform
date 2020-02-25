@@ -1,5 +1,4 @@
-import _ from 'lodash/fp'
-import { tokenizePath, joinPaths, pickFields, filterTree } from './util'
+import { tokenizePath, joinPaths, pickFields } from './util'
 
 it('tokenizePath', () => {
   expect(tokenizePath()).toEqual([])
@@ -36,16 +35,5 @@ it('pickFields', () => {
   expect(pickFields(tree, '')).toEqual(result)
   expect(pickFields(tree, [])).toEqual(result)
   expect(pickFields(tree)).toEqual(result)
-  expect(pickFields(tree, 'a.a.a')).toEqual({ 'a.a.a': {} })
-})
-
-it('filterTree', () => {
-  let fn = filterTree(_.negate(_.isUndefined))
-  expect(fn(undefined)).toBe(undefined)
-  expect(fn([])).toEqual([])
-  expect(fn({})).toEqual({})
-  expect(fn([undefined, 1])).toStrictEqual([1])
-  expect(fn({ a: undefined, b: 1 })).toStrictEqual({ b: 1 })
-  expect(fn([undefined, { a: undefined, b: 1 }])).toStrictEqual([{ b: 1 }])
-  expect(fn([undefined, { a: undefined, b: 1 }])).toStrictEqual([{ b: 1 }])
+  expect(pickFields(tree, ['a.a.a'])).toEqual({ 'a.a.a': {} })
 })

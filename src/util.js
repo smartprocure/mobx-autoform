@@ -31,28 +31,4 @@ export let pickFields = (node, paths = []) => {
   return _.isEmpty(paths) ? _.omit('', flat) : _.pick(paths, flat)
 }
 
-let reduceTreePost = (next = F.traverse) =>
-  _.curry((f, result, tree) => {
-    F.walk(next)(_.noop, (...x) => {
-      result = f(result, ...x)
-    })(tree)
-    return result
-  })
-
-let filterCollection = _.curryN(2, (fn, x) =>
-  _.isPlainObject(x)
-    ? _.pickBy(fn, x)
-    : _.isArray(x)
-    ? _.filter(fn, x)
-    : undefined
-)
-
-let isLeave = _.negate(F.isTraversable)
-
-export let filterTree = _.curryN(2, (fn, v) =>
-  reduceTreePost(filterCollection(fn))((acc, x, ...args) =>
-    isLeave(x) ? F.setOn(buildPath(x, ...args), x, acc) : acc
-  )(_.isArray(v) ? [] : _.isPlainObject(v) ? {} : v)(v)
-)
-
-export let toJSRecurse = x => toJS(x, { recurseEverything: true })
+export let toJSDeep = x => toJS(x, { recurseEverything: true })

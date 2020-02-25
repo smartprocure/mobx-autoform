@@ -1,8 +1,8 @@
 import F from 'futil'
 import _ from 'lodash/fp'
-import { reaction, isObservable, observable } from 'mobx'
+import { reaction, isObservable } from 'mobx'
 import Form from './index'
-import { buildPath, toJSRecurse } from './util'
+import { buildPath, toJSDeep } from './util'
 
 require('util').inspect.defaultOptions.depth = null
 
@@ -31,6 +31,7 @@ beforeEach(() => {
           },
           addresses: {
             label: 'Array field',
+            defaultValue: [null, null],
             itemField: {
               label: 'Item field is a record',
               fields: {
@@ -70,18 +71,16 @@ describe('Fields were correctly initialized', () => {
   })
 })
 
-let initialValue = {
-  location: {
-    'country.state': { zip: '07016', name: undefined },
-    addresses: [
-      { street: 'Meridian', tenants: ['John'] },
-      { street: undefined, tenants: undefined },
-    ],
-  },
-}
-
 it('Value was correctly initialized', () => {
-  expect(toJSRecurse(form.value)).toStrictEqual(initialValue)
+  expect(toJSDeep(form.value)).toStrictEqual({
+    location: {
+      'country.state': { zip: '07016', name: undefined },
+      addresses: [
+        { street: 'Meridian', tenants: ['John'] },
+        { street: undefined, tenants: undefined },
+      ],
+    },
+  })
 })
 
 describe('add()', () => {
@@ -117,7 +116,7 @@ describe('add()', () => {
   })
 
   describe('Object field', () => {
-    let fieldsValues = field => toJSRecurse(_.mapValues('value', field.fields))
+    let fieldsValues = field => toJSDeep(_.mapValues('value', field.fields))
     it.each([
       ['location.["country.state"]', undefined, undefined],
       ['location.["country.state"]', null, undefined],
@@ -130,7 +129,7 @@ describe('add()', () => {
       let before = fieldsValues(field)
       field.add(value)
       expect(fieldsValues(field)).toStrictEqual({ ...before, ...expected })
-      expect(toJSRecurse(field.value)).toStrictEqual({ ...before, ...expected })
+      expect(toJSDeep(field.value)).toStrictEqual({ ...before, ...expected })
     })
   })
 })
@@ -193,7 +192,10 @@ describe('reset()', () => {
         {
           location: {
             'country.state': { zip: undefined, name: undefined },
-            addresses: undefined,
+            addresses: [
+              { street: undefined, tenants: undefined },
+              { street: undefined, tenants: undefined },
+            ],
           },
           reset: { this: true },
         },
@@ -221,7 +223,7 @@ describe('reset()', () => {
       field.reset(value)
 
       // Check values were reset
-      expect(toJSRecurse(field.value)).toStrictEqual(expected)
+      expect(toJSDeep(field.value)).toStrictEqual(expected)
 
       // Check array fields were reset
       walkNodes((node, p) => {
@@ -305,21 +307,30 @@ describe('isDirty', () => {
 it('getSnapshot()', () => {
   expect(form.getSnapshot()).toStrictEqual({
     'location.country.state.zip': '07016',
+    'location.country.state.name': undefined,
     'location.addresses.0.street': 'Meridian',
     'location.addresses.0.tenants.0': 'John',
+    'location.addresses.1.street': undefined,
+    'location.addresses.1.tenants': undefined,
   })
 })
 
 it('getNestedSnapshot()', () => {
   expect(form.getNestedSnapshot()).toStrictEqual({
     location: {
-      'country.state': { zip: '07016' },
-      addresses: [{ street: 'Meridian', tenants: ['John'] }],
+      'country.state': { zip: '07016', name: undefined },
+      addresses: [
+        { street: 'Meridian', tenants: ['John'] },
+        { street: undefined, tenants: undefined },
+      ],
     },
   })
   form.getField('location.addresses').remove(0)
   expect(form.getNestedSnapshot()).toStrictEqual({
-    location: { 'country.state': { zip: '07016' } },
+    location: {
+      'country.state': { zip: '07016', name: undefined },
+      addresses: [{ street: undefined, tenants: undefined }],
+    },
   })
 })
 
