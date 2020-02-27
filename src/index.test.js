@@ -2,13 +2,14 @@ import F from 'futil'
 import _ from 'lodash/fp'
 import { reaction, isObservable } from 'mobx'
 import Form from './index'
-import { buildPath, toJSDeep } from './util'
+import { treePath } from './futil'
+import { toJS } from './mobx'
 
 require('util').inspect.defaultOptions.depth = null
 
 let walkNodes = fn =>
   F.walk(x => x.fields)((node, ...args) => {
-    fn(node, buildPath(node, ...args))
+    fn(node, treePath(node, ...args))
   })
 
 let dispose = _.noop
@@ -72,7 +73,7 @@ describe('Fields were correctly initialized', () => {
 })
 
 it('Value was correctly initialized', () => {
-  expect(toJSDeep(form.value)).toStrictEqual({
+  expect(toJS(form.value)).toStrictEqual({
     location: {
       'country.state': { zip: '07016', name: undefined },
       addresses: [
@@ -116,7 +117,7 @@ describe('add()', () => {
   })
 
   describe('Object field', () => {
-    let fieldsValues = field => toJSDeep(_.mapValues('value', field.fields))
+    let fieldsValues = field => toJS(_.mapValues('value', field.fields))
     it.each([
       ['location.["country.state"]', undefined, undefined],
       ['location.["country.state"]', null, undefined],
@@ -129,7 +130,7 @@ describe('add()', () => {
       let before = fieldsValues(field)
       field.add(value)
       expect(fieldsValues(field)).toStrictEqual({ ...before, ...expected })
-      expect(toJSDeep(field.value)).toStrictEqual({ ...before, ...expected })
+      expect(toJS(field.value)).toStrictEqual({ ...before, ...expected })
     })
   })
 })
@@ -166,6 +167,21 @@ describe('remove()', () => {
       let field = form.getField(path)
       field.remove(pathToRemove)
       expect(field.getField(pathToRemove)).toBeUndefined()
+    })
+  })
+
+  describe('Errors are cleared', () => {
+    it.each([['location'], ['location.addresses']])('%s', path => {
+      let field = form.getField(path)
+      let dotPath = _.join('.', field.path)
+      let hasErrors = () =>
+        !_.isEmpty(
+          F.pickByIndexed((e, k) => _.startsWith(dotPath, k), form.errors)
+        )
+      field.validate()
+      expect(hasErrors()).toBe(true)
+      form.remove(field.path)
+      expect(hasErrors()).toBe(false)
     })
   })
 })
@@ -223,7 +239,7 @@ describe('reset()', () => {
       field.reset(value)
 
       // Check values were reset
-      expect(toJSDeep(field.value)).toStrictEqual(expected)
+      expect(toJS(field.value)).toStrictEqual(expected)
 
       // Check array fields were reset
       walkNodes((node, p) => {
@@ -255,28 +271,33 @@ describe('validate()', () => {
   })
 })
 
-// it('errors | isValid', () => {
-//   let name = form.getField('location.addresses.0.tenants.0')
-//   expect(name.isValid).toBe(true)
-//   let isValid = jest.fn()
-//   let errors = jest.fn()
-//   dispose = _.over(
-//     reaction(
-//       () => name.isValid,
-//       x => isValid(x)
-//     ),
-//     reaction(
-//       () => name.errors,
-//       x => errors(x)
-//     )
-//   )
-//   name.validate()
-//   expect(errors).toHaveBeenCalledWith('Invalid tenant')
-//   expect(isValid).toHaveBeenCalledWith(false)
-//   form.reset()
-//   expect(errors).toHaveBeenCalledWith([])
-//   expect(isValid).toHaveBeenCalledWith(true)
-// })
+it('errors | isValid', () => {
+  let name = form.getField('location.addresses.0.tenants.0')
+  expect(name.isValid).toBe(true)
+  let isValid = jest.fn()
+  let errors = jest.fn()
+  dispose = _.over(
+    reaction(
+      () => name.isValid,
+      x => isValid(x)
+    ),
+    reaction(
+      () => name.errors,
+      x => errors(x)
+    )
+  )
+  name.validate()
+  expect(errors).toHaveBeenCalledWith('Invalid tenant')
+  expect(isValid).toHaveBeenCalledWith(false)
+  form.reset()
+  expect(errors).toHaveBeenCalledWith([])
+  expect(isValid).toHaveBeenCalledWith(true)
+
+  let addresses = form.getField('location.addresses')
+  addresses.validate()
+  expect(errors).toHaveBeenCalledWith('Invalid tenant')
+  expect(isValid).toHaveBeenCalledWith(false)
+})
 
 describe('isDirty', () => {
   it('field', () => {
