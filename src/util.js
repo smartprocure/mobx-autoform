@@ -22,6 +22,6 @@ export let pickFields = (node, paths = []) => {
   )(node)
   paths = _.compact(paths)
   return _.isEmpty(paths)
-    ? _.omit('', flat)
+    ? flat
     : F.pickByIndexed((x, k) => _.some(p => _.startsWith(p, k), paths), flat)
 }

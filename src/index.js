@@ -82,7 +82,7 @@ export default ({
           ..._.omit(_.keys(picked), state.errors),
           ...validate(form, picked),
         }
-        return state.errors
+        return _.pick(_.keys(picked), state.errors)
       },
       add(x) {
         throwIfLeaf(node)
@@ -157,7 +157,7 @@ export default ({
     form.submit.state.error = null
   }
 
-  let form = extendObservable(initTree({ fields: config.fields }, []), {
+  let form = extendObservable(initTree(config, []), {
     getSnapshot: () => F.flattenObject(toJS(state.value)),
     getNestedSnapshot: () => F.unflattenObject(toJS(state.value)),
     getPatch: () => unmerge(saved.value, toJS(state.value)),

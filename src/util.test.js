@@ -1,3 +1,4 @@
+import _ from 'lodash/fp'
 import { tokenizePath, safeJoinPaths, pickFields } from './util'
 
 it('tokenizePath', () => {
@@ -28,18 +29,16 @@ it('pickFields', () => {
       },
     },
   }
-  let result = {
+  let allFields = {
+    '': tree,
     a: tree.fields.a,
     'a.a.a': {},
     'a.a.b': {},
   }
-  expect(pickFields(tree)).toEqual(result)
-  expect(pickFields(tree, [])).toEqual(result)
-  expect(pickFields(tree, [''])).toEqual(result)
-  expect(pickFields(tree, ['a'])).toEqual(result)
-  expect(pickFields(tree, ['a.a'])).toEqual({
-    'a.a.a': {},
-    'a.a.b': {},
-  })
+  expect(pickFields(tree)).toEqual(allFields)
+  expect(pickFields(tree, [])).toEqual(allFields)
+  expect(pickFields(tree, [''])).toEqual(allFields)
+  expect(pickFields(tree, ['a'])).toEqual(_.omit('', allFields))
+  expect(pickFields(tree, ['a.a'])).toEqual(_.omit(['', 'a'], allFields))
   expect(pickFields(tree, ['a.a.a'])).toEqual({ 'a.a.a': {} })
 })
