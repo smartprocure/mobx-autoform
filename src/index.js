@@ -3,12 +3,12 @@ import _ from 'lodash/fp'
 import { observable, extendObservable } from 'mobx'
 import * as validators from './validators'
 import { tokenizePath, pickFields, safeJoinPaths } from './util'
-import { simpleDiff, treePath, splitAt } from './futil'
+import { treePath, splitAt } from './futil'
 import { get, set, toJS } from './mobx'
 export { validators }
 
 let clone = _.flow(toJS, _.cloneDeep)
-let unmerge = _.flow(simpleDiff, _.mapValues('to'))
+let unmerge = _.flow(F.simpleDiff, _.mapValues('to'))
 let changed = (x, y) => !_.isEqual(x, y) && !(F.isBlank(x) && F.isBlank(y))
 let Command = F.aspects.command(x => y => extendObservable(y, x))
 let throwIfLeaf = x =>
