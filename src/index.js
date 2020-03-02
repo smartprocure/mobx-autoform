@@ -25,7 +25,9 @@ export default ({
   let saved = {}
 
   let state = observable({
-    value: config.value || _.mapValues('value', config.fields),
+    // config.field values are more of default values than anything else
+    // Only supporting them to avoid massive breaking changes
+    value: _.merge(_.mapValues('value', config.fields), config.value),
     errors: {},
   })
 
