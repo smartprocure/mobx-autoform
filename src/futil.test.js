@@ -10,4 +10,3 @@ it('splitAt', () => {
   expect(splitAt(2, [1, 2])).toEqual([[1, 2], []])
   expect(splitAt(3, [1, 2])).toEqual([[1, 2], []])
 })
-
