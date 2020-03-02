@@ -139,10 +139,15 @@ export default ({
   let initTree = (config, rootPath) =>
     F.reduceTree(x => x.fields)((tree, node, ...args) => {
       let path = treePath(node, ...args)
+      // Stamp path on node
       node.path = [...rootPath, ...path]
+      // Populate array fields so we can recurse on them
       if (node.itemField) node.fields = makeItemFields(node)
       let field = initField(node)
+      // Set default value. We also want to set them even if they're undefined
+      // to maintain backwards compatibility on snapshots
       if (_.isUndefined(field.value)) field.value = clone(field.defaultValue)
+      // If path is empty, we've just initialized the root node, so return that
       return _.isEmpty(path)
         ? field
         : F.setOn(['fields', ...fieldPath(path)], field, tree)
