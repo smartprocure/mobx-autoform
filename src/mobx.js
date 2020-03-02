@@ -4,6 +4,8 @@ import * as mobx from 'mobx'
 
 export let toJS = x => mobx.toJS(x, { recurseEverything: true })
 
+// Only supports array paths for now
+
 export let get = (path, obj) =>
   _.reduce(
     (v, k) => (mobx.isObservable(v) ? mobx.get(v, k) : _.get(k, v)),

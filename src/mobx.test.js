@@ -10,10 +10,10 @@ describe('get/set', () => {
     let o = observable(value)
     let fn = jest.fn()
     let dispose = reaction(
-      () => get('a.b.c', o),
+      () => get(['a', 'b', 'c'], o),
       x => fn(x)
     )
-    set('a.b.c', 2, o)
+    set(['a', 'b', 'c'], 2, o)
     expect(fn).toHaveBeenCalledWith(2)
     dispose()
   })
