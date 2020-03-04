@@ -26,7 +26,6 @@ export default ({
   value,
   afterInitField = x => x,
   validate = validators.functions,
-  fields = {},
   ...config
 }) => {
   let saved = {}
@@ -36,7 +35,7 @@ export default ({
     let dotPath = _.join('.', rootPath)
     let valuePath = ['value', ...rootPath]
 
-    let field = observable({
+    let node = observable({
       ...config,
       field: _.last(rootPath),
       label: config.label || _.startCase(_.last(rootPath)),
@@ -50,20 +49,14 @@ export default ({
         return get(_.compact(['errors', dotPath]), state) || []
       },
       get isValid() {
-        return _.isEmpty(field.errors)
+        return _.isEmpty(node.errors)
       },
       get isDirty() {
-        return changed(_.get(valuePath, saved), toJS(field.value))
-      },
-      getField(path) {
-        return _.get(safeJoinPaths(fieldPath(tokenizePath(path))), field.fields)
-      },
-      clean() {
-        F.setOn(valuePath, clone(field.value), saved)
+        return changed(_.get(valuePath, saved), toJS(node.value))
       },
       reset() {
+        node.value = clone(_.get(valuePath, saved))
         state.errors = omitByPrefixes([dotPath], state.errors)
-        field.value = clone(_.get(valuePath, saved))
       },
       validate(paths = [dotPath]) {
         let errors = validate(form, pickByPrefixes(paths, flattenField(form)))
@@ -72,6 +65,12 @@ export default ({
           ...errors,
         }
         return errors
+      },
+      clean() {
+        F.setOn(valuePath, clone(node.value), saved)
+      },
+      getField(path) {
+        return _.get(safeJoinPaths(fieldPath(tokenizePath(path))), node.fields)
       },
       dispose() {
         _.over(_.values(pickByPrefixes([dotPath], state.disposers)))()
@@ -89,16 +88,16 @@ export default ({
             : [[_.nth(-2, path)], [_.nth(-1, path)]]
 
         if (!_.isEmpty(parentPath))
-          return field.getField(parentPath).remove(childPath)
+          return node.getField(parentPath).remove(childPath)
 
         let [key] = childPath
         // If array field, remove the value and the reaction will take care of the rest
-        if (field.itemField) field.value.splice(key, 1)
+        if (node.itemField) node.value.splice(key, 1)
         // Remove object field
         else {
-          field.fields[key].dispose()
-          F.unsetOn(key, field.value)
-          F.unsetOn(key, field.fields)
+          node.fields[key].dispose()
+          F.unsetOn(key, node.value)
+          F.unsetOn(key, node.fields)
         }
 
         // Clean errors for this field and all subfields
@@ -110,24 +109,24 @@ export default ({
     })
 
     // config.value acts as a default value
-    if (_.isUndefined(field.value) && !_.isUndefined(config.value))
-      field.value = clone(config.value)
+    if (_.isUndefined(node.value) && !_.isUndefined(config.value))
+      node.value = clone(config.value)
 
     // Only allow adding subfields for nested object fields
     if (config.fields)
-      field.add = configs =>
+      node.add = configs =>
         extendObservable(
-          field.fields,
+          node.fields,
           F.mapValuesIndexed((x, k) => initTree(x, [...rootPath, k]), configs)
         )
 
     // Recreate all array fields on array size changes
     if (config.itemField) {
       state.disposers[dotPath] = reaction(
-        () => _.size(field.value),
+        () => _.size(node.value),
         size => {
-          _.each(x => x.dispose(), field.fields)
-          field.fields = _.times(
+          _.each(x => x.dispose(), node.fields)
+          node.fields = _.times(
             index => initTree(clone(config.itemField), [...rootPath, index]),
             size
           )
@@ -135,7 +134,7 @@ export default ({
       )
     }
 
-    return afterInitField(field, config)
+    return afterInitField(node, config)
   }
 
   let initTree = (config, rootPath = []) =>
@@ -147,9 +146,9 @@ export default ({
       return _.isEmpty(path)
         ? field
         : F.setOn(['fields', ...fieldPath(path)], field, tree)
-    })({})(_.cloneDeep(config))
+    })({})(_.cloneDeep(_.defaults({ fields: {} }, config)))
 
-  let form = extendObservable(initTree({ fields, ...config }), {
+  let form = extendObservable(initTree(config), {
     getSnapshot: () => F.flattenObject(form.getNestedSnapshot()),
     // Ideally we'd just do toJS(form.value) but we have to maintain backwards
     // compatibility and include fields with undefined values as well
@@ -161,8 +160,9 @@ export default ({
     getPatch: () => unmerge(saved.value, toJS(state.value)),
     submit: Command(() => {
       form.submit.state.error = null
-      !_.isEmpty(form.validate()) && F.throws('Validation Error')
-      return config.submit(form.getSnapshot(), form)
+      if (_.isEmpty(form.validate()))
+        return config.submit(form.getSnapshot(), form)
+      else throw 'Validation Error'
     }),
     get submitError() {
       return F.getOrReturn('message', form.submit.state.error)
