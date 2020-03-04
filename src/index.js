@@ -1,9 +1,15 @@
 import F from 'futil'
 import _ from 'lodash/fp'
-import { observable, extendObservable } from 'mobx'
+import { observable, extendObservable, reaction } from 'mobx'
 import * as validators from './validators'
-import { tokenizePath, pickFields, safeJoinPaths } from './util'
-import { treePath, splitAt } from './futil'
+import { tokenizePath, safeJoinPaths } from './util'
+import {
+  treePath,
+  omitByPrefixes,
+  pickByPrefixes,
+  splitAt,
+  reduceTreePost,
+} from './futil'
 import { get, set, toJS } from './mobx'
 export { validators }
 
@@ -11,33 +17,29 @@ let clone = _.flow(toJS, _.cloneDeep)
 let unmerge = _.flow(F.simpleDiff, _.mapValues('to'))
 let changed = (x, y) => !_.isEqual(x, y) && !(F.isBlank(x) && F.isBlank(y))
 let Command = F.aspects.command(x => y => extendObservable(y, x))
-let throwIfLeaf = x =>
-  !_.has('fields', x) &&
-  !_.has('itemField', x) &&
-  F.throws(`${_.join('.', x.path)}: No fields or itemField`)
 let fieldPath = _.flow(F.intersperse('fields'), _.compact)
+let flattenField = F.flattenTree(x => x.fields)((...x) =>
+  _.join('.', treePath(...x))
+)
 
 export default ({
+  value,
   afterInitField = x => x,
   validate = validators.functions,
+  fields = {},
   ...config
 }) => {
   let saved = {}
+  let state = observable({ value, errors: {}, disposers: {} })
 
-  let state = observable({
-    // config.field values are more of default values than anything else
-    // Only supporting them to avoid massive breaking changes
-    value: _.merge(_.mapValues('value', config.fields), config.value),
-    errors: {},
-  })
+  let initField = (config, rootPath = []) => {
+    let dotPath = _.join('.', rootPath)
+    let valuePath = ['value', ...rootPath]
 
-  let initField = config => {
-    let dotPath = _.join('.', config.path)
-    let valuePath = ['value', ...config.path]
-    let node = observable({
-      ..._.omit('path', config),
-      field: _.last(config.path),
-      label: config.label || _.startCase(_.last(config.path)),
+    let field = observable({
+      ...config,
+      field: _.last(rootPath),
+      label: config.label || _.startCase(_.last(rootPath)),
       get value() {
         return get(valuePath, state)
       },
@@ -45,131 +47,120 @@ export default ({
         set(valuePath, x, state)
       },
       get errors() {
-        return _.isEmpty(dotPath)
-          ? state.errors
-          : get([dotPath], state.errors) || []
+        return get(_.compact(['errors', dotPath]), state) || []
       },
       get isValid() {
-        return _.isEmpty(node.errors)
+        return _.isEmpty(field.errors)
       },
       get isDirty() {
-        return changed(_.get(valuePath, saved), toJS(node.value))
+        return changed(_.get(valuePath, saved), toJS(field.value))
       },
       getField(path) {
-        path = fieldPath(tokenizePath(path))
-        return _.isEmpty(path) ? node : _.get(safeJoinPaths(path), node.fields)
+        return _.get(safeJoinPaths(fieldPath(tokenizePath(path))), field.fields)
       },
       clean() {
-        F.setOn(valuePath, clone(node.value), saved)
+        F.setOn(valuePath, clone(field.value), saved)
       },
-      reset(value) {
-        // Reset errors
-        if (_.isEmpty(node.path)) clearFormErrors()
-        else F.unsetOn([dotPath], state.errors)
-        // Reset value
-        if (!_.isUndefined(value)) F.setOn(valuePath, clone(value), saved)
-        node.value = clone(_.get(valuePath, saved))
-        // Re-init array fields and set default values
-        F.walk(x => x.fields)(x => {
-          let valuePath = ['value', ...x.path]
-          if (x.itemField) x.fields = initFields(makeItemFields(x), x.path)
-          if (_.isUndefined(x.value)) x.value = clone(x.defaultValue)
-          if (_.isUndefined(_.get(valuePath, saved)))
-            F.setOn(valuePath, clone(x.defaultValue), saved)
-        })(node)
+      reset() {
+        state.errors = omitByPrefixes([dotPath], state.errors)
+        field.value = clone(_.get(valuePath, saved))
       },
-      validate(paths) {
-        let picked = pickFields(form, _.isEmpty(paths) ? [dotPath] : paths)
+      validate(paths = [dotPath]) {
+        let errors = validate(form, pickByPrefixes(paths, flattenField(form)))
         state.errors = {
-          ..._.omit(_.keys(picked), state.errors),
-          ...validate(form, picked),
+          ...omitByPrefixes(paths, state.errors),
+          ...errors,
         }
-        return _.pick(_.keys(picked), state.errors)
+        return errors
       },
-      add(x) {
-        throwIfLeaf(node)
-        if (node.itemField) {
-          if (_.isUndefined(node.value)) node.value = []
-          node.value.push(x)
-          node.fields.push(
-            initTree(clone(node.itemField), [...node.path, node.fields.length])
-          )
-        } else if (node.fields) {
-          if (_.isUndefined(node.value)) node.value = {}
-          extendObservable(node.value, _.mapValues('value', x))
-          extendObservable(node.fields, initFields(x, node.path))
-        }
+      dispose() {
+        _.over(_.values(pickByPrefixes([dotPath], state.disposers)))()
+        state.disposers = omitByPrefixes([dotPath], state.disposers)
       },
-      remove(x) {
-        if (_.isUndefined(node.value)) return
-        let [parentPath, path] = splitAt(-1, tokenizePath(x))
-        if (!_.isEmpty(parentPath)) {
-          let field = node.getField(parentPath)
-          field && field.remove(path)
-        } else {
-          throwIfLeaf(node)
-          let [key] = path
-          if (node.itemField) {
-            node.value.splice(key, 1)
-            node.fields.splice(key)
-            _.each(node.add, node.value.splice(key))
-          } else if (node.fields) {
-            F.unsetOn(key, node.value)
-            F.unsetOn(key, node.fields)
-          }
-          // Clear errors for this field and nested fields as well
-          let dotPath = _.join('.', node.path)
-          state.errors = F.pickByIndexed(
-            (x, k) => !_.startsWith(dotPath, k),
-            state.errors
-          )
+      remove(path) {
+        // If we get a path, find the field that owns the last path component
+        // and call remove on that. Ex: ['a', 'b', 'c'] => getField(['a', 'b']).remove('c')
+        //
+        // If we don't get a path, remove this field. For that we need to call
+        // remove on this field's parent.
+        let [parentPath, childPath] =
+          _.isNumber(path) && !_.isUndefined(path)
+            ? splitAt(-1, tokenizePath(path))
+            : [[_.nth(-2, path)], [_.nth(-1, path)]]
+
+        if (!_.isEmpty(parentPath))
+          return field.getField(parentPath).remove(childPath)
+
+        let [key] = childPath
+        // If array field, remove the value and the reaction will take care of the rest
+        if (field.itemField) field.value.splice(key, 1)
+        // Remove object field
+        else {
+          field.fields[key].dispose()
+          F.unsetOn(key, field.value)
+          F.unsetOn(key, field.fields)
         }
+
+        // Clean errors for this field and all subfields
+        state.errors = omitByPrefixes(
+          _.join('.', [...rootPath, ...key]),
+          state.errors
+        )
       },
     })
-    node.path = config.path
-    return afterInitField(node, config)
+
+    // config.value acts as a default value
+    if (_.isUndefined(field.value) && !_.isUndefined(config.value))
+      field.value = clone(config.value)
+
+    // Only allow adding subfields for nested object fields
+    if (config.fields)
+      field.add = configs =>
+        extendObservable(
+          field.fields,
+          F.mapValuesIndexed((x, k) => initTree(x, [...rootPath, k]), configs)
+        )
+
+    // Recreate all array fields on array size changes
+    if (config.itemField) {
+      state.disposers[dotPath] = reaction(
+        () => _.size(field.value),
+        size => {
+          _.each(x => x.dispose(), field.fields)
+          field.fields = _.times(
+            index => initTree(clone(config.itemField), [...rootPath, index]),
+            size
+          )
+        }
+      )
+    }
+
+    return afterInitField(field, config)
   }
 
-  let makeItemFields = x =>
-    _.times(
-      () => clone(x.itemField),
-      _.size(_.get(['value', ...x.path], state) || x.defaultValue)
-    )
-
-  let initTree = (config, rootPath) =>
+  let initTree = (config, rootPath = []) =>
     F.reduceTree(x => x.fields)((tree, node, ...args) => {
       let path = treePath(node, ...args)
-      // Stamp path on node
-      node.path = [...rootPath, ...path]
-      // Populate array fields so we can recurse on them
-      if (node.itemField) node.fields = makeItemFields(node)
-      let field = initField(node)
-      // Set default value. We also want to set them even if they're undefined
-      // to maintain backwards compatibility on snapshots
-      if (_.isUndefined(field.value)) field.value = clone(field.defaultValue)
-      // If path is empty, we've just initialized the root node, so return that
+      let field = initField(node, [...rootPath, ...path])
+      if (node.itemField)
+        node.fields = _.times(() => clone(node.itemField), _.size(field.value))
       return _.isEmpty(path)
         ? field
         : F.setOn(['fields', ...fieldPath(path)], field, tree)
-    })({})(config)
+    })({})(_.cloneDeep(config))
 
-  let initFields = (configs, rootPath) =>
-    (_.isArray(configs) ? F.mapIndexed : F.mapValuesIndexed)(
-      (x, k) => initTree(x, [...rootPath, k]),
-      configs
-    )
-
-  let clearFormErrors = () => {
-    state.errors = {}
-    form.submit.state.error = null
-  }
-
-  let form = extendObservable(initTree(config, []), {
-    getSnapshot: () => F.flattenObject(toJS(state.value)),
-    getNestedSnapshot: () => F.unflattenObject(toJS(state.value)),
+  let form = extendObservable(initTree({ fields, ...config }), {
+    getSnapshot: () => F.flattenObject(form.getNestedSnapshot()),
+    // Ideally we'd just do toJS(form.value) but we have to maintain backwards
+    // compatibility and include fields with undefined values as well
+    getNestedSnapshot: () =>
+      reduceTreePost(x => x.fields)((tree, x, ...xs) =>
+        // Only walk leaf nodes
+        x.fields ? tree : _.set(treePath(x, ...xs), x.value, tree)
+      )({})(form),
     getPatch: () => unmerge(saved.value, toJS(state.value)),
     submit: Command(() => {
-      clearFormErrors()
+      form.submit.state.error = null
       !_.isEmpty(form.validate()) && F.throws('Validation Error')
       return config.submit(form.getSnapshot(), form)
     }),
@@ -177,8 +168,13 @@ export default ({
       return F.getOrReturn('message', form.submit.state.error)
     },
   })
+
+  form.reset = F.aspectSync({
+    before: () => (form.submit.state.error = null),
+  })(form.reset)
   F.unsetOn('field', form)
   F.unsetOn('label', form)
   form.clean()
+
   return form
 }
