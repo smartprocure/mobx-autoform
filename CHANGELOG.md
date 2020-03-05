@@ -1,3 +1,7 @@
+# 0.3.0
+* Add nested fields support
+* Add array fields support
+
 # 0.2.0
 * Export validators
 
