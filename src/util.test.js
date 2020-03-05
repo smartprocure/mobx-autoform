@@ -1,4 +1,4 @@
-import { tokenizePath, safeJoinPaths, gatherValues } from './util'
+import { tokenizePath, safeJoinPaths, gatherFormValues } from './util'
 
 it('tokenizePath', () => {
   expect(tokenizePath()).toEqual([])
@@ -17,9 +17,9 @@ it('safeJoinPaths', () => {
   expect(safeJoinPaths(['a', 'b.c', 0, 'd'])).toEqual('a.["b.c"].0.d')
 })
 
-it('gatherValues', () => {
+it('gatherFormValues', () => {
   expect(
-    gatherValues({
+    gatherFormValues({
       fields: {
         'a.b': { fields: [{ value: 1 }, { value: 2 }] },
         c: { fields: { d: {} } },
