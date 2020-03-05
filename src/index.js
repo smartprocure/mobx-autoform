@@ -2,13 +2,8 @@ import F from 'futil'
 import _ from 'lodash/fp'
 import { observable, extendObservable, reaction } from 'mobx'
 import * as validators from './validators'
-import { tokenizePath, safeJoinPaths } from './util'
-import {
-  treePath,
-  omitByPrefixes,
-  pickByPrefixes,
-  reduceTreePost,
-} from './futil'
+import { tokenizePath, safeJoinPaths, gatherValues } from './util'
+import { treePath, omitByPrefixes, pickByPrefixes } from './futil'
 import { get, set, toJS } from './mobx'
 export { validators }
 
@@ -135,14 +130,10 @@ export default ({
     })({})(clone(_.defaults({ fields: {} }, config)))
 
   let form = extendObservable(initTree(config), {
-    getSnapshot: () => F.flattenObject(form.getNestedSnapshot()),
     // Ideally we'd just do toJS(form.value) but we have to maintain backwards
     // compatibility and include fields with undefined values as well
-    getNestedSnapshot: () =>
-      reduceTreePost(x => x.fields)((tree, x, ...xs) =>
-        // Only walk leaf nodes
-        x.fields ? tree : _.set(treePath(x, ...xs), x.value, tree)
-      )({})(form),
+    getSnapshot: () => F.flattenObject(toJS(gatherValues(form))),
+    getNestedSnapshot: () => F.unflattenObject(form.getSnapshot()),
     getPatch: () => unmerge(saved.value, toJS(state.value)),
     submit: Command(() => {
       form.submit.state.error = null

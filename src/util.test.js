@@ -1,4 +1,4 @@
-import { tokenizePath, safeJoinPaths } from './util'
+import { tokenizePath, safeJoinPaths, gatherValues } from './util'
 
 it('tokenizePath', () => {
   expect(tokenizePath()).toEqual([])
@@ -15,4 +15,16 @@ it('safeJoinPaths', () => {
   expect(safeJoinPaths()).toEqual('')
   expect(safeJoinPaths(['a', '["b.c"]', 0, 'd'])).toEqual('a.["b.c"].0.d')
   expect(safeJoinPaths(['a', 'b.c', 0, 'd'])).toEqual('a.["b.c"].0.d')
+})
+
+it('gatherValues', () => {
+  expect(
+    gatherValues({
+      fields: {
+        'a.b': { fields: [{ value: 1 }, { value: 2 }] },
+        c: { fields: { d: {} } },
+        e: { value: [1, 2], fields: [{ value: 1 }, { value: 2 }] },
+      },
+    })
+  ).toStrictEqual({ 'a.b': [1, 2], c: { d: undefined }, e: [1, 2] })
 })

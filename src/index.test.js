@@ -239,14 +239,18 @@ describe('Methods and computeds', () => {
   it('getNestedSnapshot()', () => {
     expect(form.getNestedSnapshot()).toStrictEqual({
       location: {
-        'country.state': { zip: '07016', name: undefined },
+        country: {
+          state: { zip: '07016', name: undefined },
+        },
         addresses: [{ street: 'Meridian', tenants: ['John'] }],
       },
     })
     form.getField('location.addresses.0').remove()
     expect(form.getNestedSnapshot()).toStrictEqual({
       location: {
-        'country.state': { zip: '07016', name: undefined },
+        country: {
+          state: { zip: '07016', name: undefined },
+        },
       },
     })
   })
