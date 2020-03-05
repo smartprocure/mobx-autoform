@@ -76,12 +76,11 @@ export default ({
         state.disposers = omitByPrefixes([dotPath], state.disposers)
       },
       remove() {
-        let parent = form.getField(_.nth(-2, rootPath)) || form
+        let parent = form.getField(_.dropRight(1, rootPath)) || form
         // If array field, remove the value and the reaction will take care of the rest
-        // Otherwise, remove object field
-        if (parent.itemField) {
-          parent.value.splice(node.field, 1)
-        } else {
+        if (parent.itemField) parent.value.splice(node.field, 1)
+        // Remove object field
+        else {
           node.dispose()
           F.unsetOn(node.field, parent.value)
           F.unsetOn(node.field, parent.fields)
@@ -112,7 +111,7 @@ export default ({
           _.each(x => x.dispose(), node.fields)
           node.fields.replace(
             _.times(
-              index => initTree(clone(node.itemField), [...rootPath, index]),
+              index => initTree(node.itemField, [...rootPath, index]),
               size
             )
           )
@@ -127,11 +126,12 @@ export default ({
     F.reduceTree(x => x.fields)((tree, node, ...args) => {
       let path = treePath(node, ...args)
       let field = initField(node, [...rootPath, ...path])
+      // Set fields on node to keep recursing
       if (node.itemField)
         node.fields = _.times(() => clone(node.itemField), _.size(field.value))
       return _.isEmpty(path)
         ? field
-        : F.setOn(['fields', ...fieldPath(path)], field, tree)
+        : set(['fields', ...fieldPath(path)], field, tree)
     })({})(_.cloneDeep(_.defaults({ fields: {} }, config)))
 
   let form = extendObservable(initTree(config), {

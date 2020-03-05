@@ -22,4 +22,5 @@ export let set = (path, v, obj) => {
     _.dropRight(1, path)
   )
   m.set(n, _.last(path), v)
+  return obj
 }
