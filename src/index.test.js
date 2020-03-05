@@ -89,6 +89,30 @@ describe('Form initialization', () => {
   })
 })
 
+it('Array fields', () => {
+  let form = Form({ fields })
+  let addresses = form.getField('location.addresses')
+
+  // Test value and fields are tracked
+  let valueFn = jest.fn()
+  reaction(
+    () => _.map(_.identity, addresses.value),
+    x => valueFn(x)
+  )
+  let fieldsFn = jest.fn()
+  reaction(
+    () => _.map(_.identity, addresses.fields),
+    x => fieldsFn(x)
+  )
+  addresses.value = [{}]
+  expect(valueFn).toHaveBeenCalledWith([{}])
+  expect(fieldsFn).toHaveBeenCalledTimes(1)
+
+  // Test value and fields are set
+  expect(addresses.value.length).toBe(1)
+  expect(addresses.fields.length).toBe(1)
+})
+
 describe('Methods and computeds', () => {
   let dispose = _.noop
   let form = null
@@ -116,6 +140,19 @@ describe('Methods and computeds', () => {
       field.value = ['whatever']
       field.reset()
       expect(toJS(field.value)).toStrictEqual(expected)
+    })
+  })
+
+  it('remove()', () => {
+    form.getField('location.addresses.0.tenants.0').remove()
+    let tenants = form.getField('location.addresses.0.tenants')
+    expect(tenants.fields).toEqual([])
+    expect(tenants.value).toEqual([])
+
+    tenants.remove()
+    expect(form.getField('location.addresses.0.tenants')).toBeUndefined()
+    expect(form.getField('location.addresses.0').value).toEqual({
+      street: 'Meridian',
     })
   })
 
@@ -206,7 +243,7 @@ describe('Methods and computeds', () => {
         addresses: [{ street: 'Meridian', tenants: ['John'] }],
       },
     })
-    form.getField('location.addresses').remove(0)
+    form.getField('location.addresses.0').remove()
     expect(form.getNestedSnapshot()).toStrictEqual({
       location: {
         'country.state': { zip: '07016', name: undefined },
