@@ -7,7 +7,6 @@ import {
   treePath,
   omitByPrefixes,
   pickByPrefixes,
-  splitAt,
   reduceTreePost,
 } from './futil'
 import { get, set, toJS } from './mobx'
@@ -76,35 +75,19 @@ export default ({
         _.over(_.values(pickByPrefixes([dotPath], state.disposers)))()
         state.disposers = omitByPrefixes([dotPath], state.disposers)
       },
-      remove(path) {
-        // If we get a path, find the field that owns the last path component
-        // and call remove on that. Ex: ['a', 'b', 'c'] => getField(['a', 'b']).remove('c')
-        //
-        // If we don't get a path, remove this field. For that we need to call
-        // remove on this field's parent.
-        let [parentPath, childPath] =
-          _.isNumber(path) && !_.isUndefined(path)
-            ? splitAt(-1, tokenizePath(path))
-            : [[_.nth(-2, path)], [_.nth(-1, path)]]
-
-        if (!_.isEmpty(parentPath))
-          return node.getField(parentPath).remove(childPath)
-
-        let [key] = childPath
+      remove() {
+        let parent = form.getField(_.nth(-2, rootPath)) || form
         // If array field, remove the value and the reaction will take care of the rest
-        if (node.itemField) node.value.splice(key, 1)
-        // Remove object field
-        else {
-          node.fields[key].dispose()
-          F.unsetOn(key, node.value)
-          F.unsetOn(key, node.fields)
+        // Otherwise, remove object field
+        if (parent.itemField) {
+          parent.value.splice(node.field, 1)
+        } else {
+          node.dispose()
+          F.unsetOn(node.field, parent.value)
+          F.unsetOn(node.field, parent.fields)
         }
-
         // Clean errors for this field and all subfields
-        state.errors = omitByPrefixes(
-          _.join('.', [...rootPath, ...key]),
-          state.errors
-        )
+        state.errors = omitByPrefixes(dotPath, state.errors)
       },
     })
 
@@ -113,7 +96,7 @@ export default ({
       node.value = clone(config.value)
 
     // Only allow adding subfields for nested object fields
-    if (config.fields)
+    if (node.fields)
       node.add = configs =>
         extendObservable(
           node.fields,
@@ -121,14 +104,17 @@ export default ({
         )
 
     // Recreate all array fields on array size changes
-    if (config.itemField) {
+    if (node.itemField) {
+      node.fields = observable([])
       state.disposers[dotPath] = reaction(
         () => _.size(node.value),
         size => {
           _.each(x => x.dispose(), node.fields)
-          node.fields = _.times(
-            index => initTree(clone(config.itemField), [...rootPath, index]),
-            size
+          node.fields.replace(
+            _.times(
+              index => initTree(clone(node.itemField), [...rootPath, index]),
+              size
+            )
           )
         }
       )
@@ -174,6 +160,7 @@ export default ({
   })(form.reset)
   F.unsetOn('field', form)
   F.unsetOn('label', form)
+  F.unsetOn('remove', form)
   form.clean()
 
   return form
