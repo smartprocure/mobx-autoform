@@ -1,3 +1,6 @@
+# 0.4.1
+* Bugfix: Use safe clone instead of `_.cloneDeep` internally
+
 # 0.4.0
 * Do not take `path` on `node.remove`. Use `form.getField(path).remove()`
 * Make sure array fields are observables when replacing array values
@@ -5,6 +8,7 @@
 # 0.3.0
 * Add nested fields support
 * Add array fields support
+* Drop `{form,field}.empty` methods.
 
 # 0.2.0
 * Export validators

@@ -132,7 +132,7 @@ export default ({
       return _.isEmpty(path)
         ? field
         : set(['fields', ...fieldPath(path)], field, tree)
-    })({})(_.cloneDeep(_.defaults({ fields: {} }, config)))
+    })({})(clone(_.defaults({ fields: {} }, config)))
 
   let form = extendObservable(initTree(config), {
     getSnapshot: () => F.flattenObject(form.getNestedSnapshot()),
