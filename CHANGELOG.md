@@ -1,3 +1,6 @@
+# 0.4.2
+* Bugfix: Unflatten all fields on `F.getNestedSnapshot`
+
 # 0.4.1
 * Bugfix: Use safe clone instead of `_.cloneDeep` internally
 
