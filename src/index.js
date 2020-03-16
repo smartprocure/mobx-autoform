@@ -8,7 +8,7 @@ import { get, set, toJS } from './mobx'
 export { validators }
 
 let clone = _.flow(toJS, _.cloneDeep)
-let unmerge = _.flow(F.simpleDiff, _.mapValues('to'))
+let unmerge = _.flow(F.diff, _.mapValues('to'))
 let changed = (x, y) => !_.isEqual(x, y) && !(F.isBlank(x) && F.isBlank(y))
 let Command = F.aspects.command(x => y => extendObservable(y, x))
 let fieldPath = _.flow(F.intersperse('fields'), _.compact)

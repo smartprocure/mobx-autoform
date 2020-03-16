@@ -1,3 +1,6 @@
+# 0.4.3
+* Detect field removals on `getPatch()`
+
 # 0.4.2
 * Bugfix: Unflatten all fields on `F.getNestedSnapshot`
 
