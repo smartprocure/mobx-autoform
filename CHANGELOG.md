@@ -1,3 +1,6 @@
+# 0.5.0
+* Add path to node
+
 # 0.4.3
 * Detect field removals on `getPatch()`
 
