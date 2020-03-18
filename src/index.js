@@ -84,6 +84,7 @@ export default ({
         state.errors = omitByPrefixes(dotPath, state.errors)
       },
     })
+    node.path = rootPath
 
     // config.value acts as a default value
     if (_.isUndefined(node.value) && !_.isUndefined(config.value))
