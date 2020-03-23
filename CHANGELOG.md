@@ -1,3 +1,6 @@
+# 0.6.0
+* Take form reactions and merge disposers
+
 # 0.5.0
 * Add path to node
 

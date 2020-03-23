@@ -20,6 +20,7 @@ export default ({
   value,
   afterInitField = x => x,
   validate = validators.functions,
+  reactions = () => _.noop,
   ...config
 }) => {
   let saved = {}
@@ -147,6 +148,8 @@ export default ({
     },
   })
 
+  let disposer = _.over(reactions(form))
+  form.dispose = F.aspectSync({ after: disposer })(form.dispose)
   form.reset = F.aspectSync({
     before: () => (form.submit.state.error = null),
   })(form.reset)
