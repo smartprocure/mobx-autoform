@@ -151,7 +151,6 @@ export default ({
     before: () => (form.submit.state.error = null),
   })(form.reset)
   F.unsetOn('field', form)
-  F.unsetOn('label', form)
   F.unsetOn('remove', form)
   form.clean()
 
