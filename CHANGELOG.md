@@ -1,3 +1,6 @@
+# 0.6.0
+* Add `label` to the form
+
 # 0.5.0
 * Add path to node
 
