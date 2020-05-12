@@ -16,6 +16,6 @@ export let validatorJS = Validator => (form, fields) => {
 
 export let functions = (form, fields) =>
   _.flow(
-    F.mapValuesIndexed(x => (x.validator || _.noop)(x.value, x)),
+    F.mapValuesIndexed(x => (x.validator || _.noop)(x.value, x, form)),
     _.omitBy(_.isEmpty)
   )(fields)
