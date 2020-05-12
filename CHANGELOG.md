@@ -1,3 +1,6 @@
+# 0.7.0
+* Pass `form` to validator function
+
 # 0.6.0
 * Add `label` to the form
 
