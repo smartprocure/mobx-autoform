@@ -297,16 +297,16 @@ describe('Methods and computeds', () => {
 })
 
 describe('Disposers', () => {
-  it('Runs onAddedField on form init', () => {
+  it('Runs getDisposer on form init', () => {
     let onAddedForm = jest.fn()
     let onAddedObj = jest.fn()
     let onAddedNested = jest.fn()
     let form = Form({
-      onAddedField: onAddedForm,
+      getDisposer: onAddedForm,
       fields: {
         obj: {
-          onAddedField: onAddedObj,
-          fields: { nested: { onAddedField: onAddedNested } },
+          getDisposer: onAddedObj,
+          fields: { nested: { getDisposer: onAddedNested } },
         },
       },
     })
@@ -315,31 +315,31 @@ describe('Disposers', () => {
     expect(onAddedNested).toHaveBeenCalledWith(form)
   })
 
-  it('Runs onAddedField on adding object field', () => {
+  it('Runs getDisposer on adding object field', () => {
     let form = Form({ fields: {} })
     let onAddedObj = jest.fn()
     let onAddedNested = jest.fn()
     form.add({
       field: {
-        onAddedField: onAddedObj,
-        fields: { nested: { onAddedField: onAddedNested } },
+        getDisposer: onAddedObj,
+        fields: { nested: { getDisposer: onAddedNested } },
       },
     })
     expect(onAddedObj).toHaveBeenCalledWith(form)
     expect(onAddedNested).toHaveBeenCalledWith(form)
   })
 
-  it('Runs onAddedField on adding array field', () => {
-    let onAddedField = jest.fn()
+  it('Runs getDisposer on adding array field', () => {
+    let getDisposer = jest.fn()
     let onAddedNested = jest.fn()
     let form = Form({
       itemField: {
-        onAddedField,
-        fields: { nested: { onAddedField: onAddedNested } },
+        getDisposer,
+        fields: { nested: { getDisposer: onAddedNested } },
       },
     })
     form.value = [{ nested: 1 }]
-    expect(onAddedField).toHaveBeenCalledWith(form)
+    expect(getDisposer).toHaveBeenCalledWith(form)
     expect(onAddedNested).toHaveBeenCalledWith(form)
   })
 
@@ -348,12 +348,12 @@ describe('Disposers', () => {
     let objDisposer = jest.fn()
     let nestedDisposer = jest.fn()
     let form = Form({
-      onAddedField: () => formDisposer,
+      getDisposer: () => formDisposer,
       fields: {
         obj: {
-          onAddedField: () => objDisposer,
+          getDisposer: () => objDisposer,
           itemField: {
-            fields: { nested: { onAddedField: () => nestedDisposer } },
+            fields: { nested: { getDisposer: () => nestedDisposer } },
           },
         },
       },
@@ -371,8 +371,8 @@ describe('Disposers', () => {
     let form = Form({
       fields: {
         obj: {
-          onAddedField: () => objDisposer,
-          fields: { nested: { onAddedField: () => nestedDisposer } },
+          getDisposer: () => objDisposer,
+          fields: { nested: { getDisposer: () => nestedDisposer } },
         },
       },
     })
@@ -387,9 +387,9 @@ describe('Disposers', () => {
     let form = Form({
       fields: {
         top: {
-          onAddedField: () => topDisposer,
+          getDisposer: () => topDisposer,
           itemField: {
-            fields: { nested: { onAddedField: () => nestedDisposer } },
+            fields: { nested: { getDisposer: () => nestedDisposer } },
           },
         },
       },

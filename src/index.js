@@ -26,7 +26,7 @@ export default ({
   let state = observable({ value, errors: {} })
 
   let collectDisposers = F.walk(x => x.fields)(node => {
-    node.dispose = node.onAddedField(form, node)
+    node.dispose = node.getDisposer(form, node)
   })
 
   let invokeDisposers = F.walk(x => x.fields)(node => {
@@ -46,7 +46,7 @@ export default ({
   }
 
   let initField = (
-    { fields, onAddedField = _.noop, ...config },
+    { fields, getDisposer = _.noop, ...config },
     rootPath = []
   ) => {
     let dotPath = _.join('.', rootPath)
@@ -90,10 +90,10 @@ export default ({
       getField(path) {
         return _.get(safeJoinPaths(fieldPath(tokenizePath(path))), node.fields)
       },
-      onAddedField(form) {
+      getDisposer(form) {
         return _.over(
           _.compact([
-            onAddedField(form),
+            getDisposer(form),
             // Recreate all array fields on array size changes
             node.itemField &&
               reaction(
