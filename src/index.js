@@ -26,12 +26,12 @@ export default ({
   let state = observable({ value, errors: {} })
 
   let collectDisposers = F.walk(x => x.fields)(node => {
-    node.dispose = node.onAddedField(form, node)
+    node._dispose = node.onAddedField(form, node)
   })
 
   let invokeDisposers = F.walk(x => x.fields)(node => {
-    node.dispose()
-    node.dispose = undefined
+    node._dispose()
+    node._dispose = undefined
   })
 
   let recreateArrayFields = node => {
