@@ -1,6 +1,6 @@
 import F from 'futil'
 import _ from 'lodash/fp'
-import { observable, extendObservable, reaction } from 'mobx'
+import { observable, extendObservable, reaction, remove } from 'mobx'
 import * as validators from './validators'
 import { tokenizePath, safeJoinPaths, gatherFormValues } from './util'
 import { treePath, omitByPrefixes, pickByPrefixes } from './futil'
@@ -23,9 +23,32 @@ export default ({
   ...config
 }) => {
   let saved = {}
-  let state = observable({ value, errors: {}, disposers: {} })
+  let state = observable({ value, errors: {} })
 
-  let initField = (config, rootPath = []) => {
+  let collectDisposers = F.walk(x => x.fields)(node => {
+    node.dispose = node.onAddedField(form, node)
+  })
+
+  let invokeDisposers = F.walk(x => x.fields)(node => {
+    node.dispose()
+    node.dispose = undefined
+  })
+
+  let recreateArrayFields = node => {
+    _.each(invokeDisposers, node.fields)
+    node.fields.replace(
+      _.times(
+        index => initTree(node.itemField, [...node.path, index]),
+        _.size(node.value)
+      )
+    )
+    _.each(collectDisposers, node.fields)
+  }
+
+  let initField = (
+    { fields, onAddedField = _.noop, ...config },
+    rootPath = []
+  ) => {
     let dotPath = _.join('.', rootPath)
     let valuePath = ['value', ...rootPath]
 
@@ -33,6 +56,7 @@ export default ({
       ...config,
       field: _.last(rootPath),
       label: config.label || _.startCase(_.last(rootPath)),
+      fields: config.itemField ? [] : fields,
       get value() {
         return get(valuePath, state)
       },
@@ -66,9 +90,18 @@ export default ({
       getField(path) {
         return _.get(safeJoinPaths(fieldPath(tokenizePath(path))), node.fields)
       },
-      dispose() {
-        _.over(_.values(pickByPrefixes([dotPath], state.disposers)))()
-        state.disposers = omitByPrefixes([dotPath], state.disposers)
+      onAddedField(form) {
+        return _.over(
+          _.compact([
+            onAddedField(form),
+            // Recreate all array fields on array size changes
+            node.itemField &&
+              reaction(
+                () => _.size(node.value),
+                () => recreateArrayFields(node)
+              ),
+          ])
+        )
       },
       remove() {
         let parent = form.getField(_.dropRight(1, rootPath)) || form
@@ -76,9 +109,9 @@ export default ({
         if (parent.itemField) parent.value.splice(node.field, 1)
         // Remove object field
         else {
-          node.dispose()
+          invokeDisposers(node)
           F.unsetOn(node.field, parent.value)
-          F.unsetOn(node.field, parent.fields)
+          remove(parent.fields, _.last(rootPath))
         }
         // Clean errors for this field and all subfields
         state.errors = omitByPrefixes(dotPath, state.errors)
@@ -92,28 +125,14 @@ export default ({
 
     // Only allow adding subfields for nested object fields
     if (node.fields)
-      node.add = configs =>
-        extendObservable(
-          node.fields,
-          F.mapValuesIndexed((x, k) => initTree(x, [...rootPath, k]), configs)
+      node.add = configs => {
+        let newFields = F.mapValuesIndexed(
+          (x, k) => initTree(x, [...node.path, k]),
+          configs
         )
-
-    // Recreate all array fields on array size changes
-    if (node.itemField) {
-      node.fields = observable([])
-      state.disposers[dotPath] = reaction(
-        () => _.size(node.value),
-        size => {
-          _.each(x => x.dispose(), node.fields)
-          node.fields.replace(
-            _.times(
-              index => initTree(node.itemField, [...rootPath, index]),
-              size
-            )
-          )
-        }
-      )
-    }
+        extendObservable(node.fields, newFields)
+        _.each(collectDisposers, newFields)
+      }
 
     return afterInitField(node, config)
   }
@@ -151,7 +170,7 @@ export default ({
     before: () => (form.submit.state.error = null),
   })(form.reset)
   F.unsetOn('field', form)
-  F.unsetOn('remove', form)
+  collectDisposers(form)
   form.clean()
 
   return form

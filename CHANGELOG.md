@@ -1,3 +1,6 @@
+# 0.8.0
+* Add `onAddedField` callback
+
 # 0.7.0
 * Pass `form` to validator function
 

@@ -20,5 +20,7 @@ export let safeJoinPaths = _.flow(
 // TODO: futil F.mapTree
 export let gatherFormValues = reduceTreePost(x => x.fields)((tree, x, ...xs) =>
   // Only walk leaf nodes
-  !_.isEmpty(x.fields) ? tree : _.set(treePath(x, ...xs), x.value, tree)
+  !_.isEmpty(x.fields) || x.doNotIncludeInSnapshot
+    ? tree
+    : _.set(treePath(x, ...xs), x.value, tree)
 )({})

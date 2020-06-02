@@ -295,3 +295,107 @@ describe('Methods and computeds', () => {
     })
   })
 })
+
+describe('Disposers', () => {
+  it('Runs onAddedField on form init', () => {
+    let onAddedForm = jest.fn()
+    let onAddedObj = jest.fn()
+    let onAddedNested = jest.fn()
+    let form = Form({
+      onAddedField: onAddedForm,
+      fields: {
+        obj: {
+          onAddedField: onAddedObj,
+          fields: { nested: { onAddedField: onAddedNested } },
+        },
+      },
+    })
+    expect(onAddedForm).toHaveBeenCalledWith(form)
+    expect(onAddedObj).toHaveBeenCalledWith(form)
+    expect(onAddedNested).toHaveBeenCalledWith(form)
+  })
+
+  it('Runs onAddedField on adding object field', () => {
+    let form = Form({ fields: {} })
+    let onAddedObj = jest.fn()
+    let onAddedNested = jest.fn()
+    form.add({
+      field: {
+        onAddedField: onAddedObj,
+        fields: { nested: { onAddedField: onAddedNested } },
+      },
+    })
+    expect(onAddedObj).toHaveBeenCalledWith(form)
+    expect(onAddedNested).toHaveBeenCalledWith(form)
+  })
+
+  it('Runs onAddedField on adding array field', () => {
+    let onAddedField = jest.fn()
+    let onAddedNested = jest.fn()
+    let form = Form({
+      itemField: {
+        onAddedField,
+        fields: { nested: { onAddedField: onAddedNested } },
+      },
+    })
+    form.value = [{ nested: 1 }]
+    expect(onAddedField).toHaveBeenCalledWith(form)
+    expect(onAddedNested).toHaveBeenCalledWith(form)
+  })
+
+  it('Runs disposers on form dispose', () => {
+    let formDisposer = jest.fn()
+    let objDisposer = jest.fn()
+    let nestedDisposer = jest.fn()
+    let form = Form({
+      onAddedField: () => formDisposer,
+      fields: {
+        obj: {
+          onAddedField: () => objDisposer,
+          itemField: {
+            fields: { nested: { onAddedField: () => nestedDisposer } },
+          },
+        },
+      },
+      value: { obj: [{ nested: 1 }] },
+    })
+    form.remove()
+    expect(formDisposer).toHaveBeenCalled()
+    expect(objDisposer).toHaveBeenCalled()
+    expect(nestedDisposer).toHaveBeenCalled()
+  })
+
+  it('Runs disposers on removing an object field', () => {
+    let objDisposer = jest.fn()
+    let nestedDisposer = jest.fn()
+    let form = Form({
+      fields: {
+        obj: {
+          onAddedField: () => objDisposer,
+          fields: { nested: { onAddedField: () => nestedDisposer } },
+        },
+      },
+    })
+    form.fields.obj.remove()
+    expect(objDisposer).toHaveBeenCalled()
+    expect(nestedDisposer).toHaveBeenCalled()
+  })
+
+  it('Runs disposers on removing an array field', () => {
+    let topDisposer = jest.fn()
+    let nestedDisposer = jest.fn()
+    let form = Form({
+      fields: {
+        top: {
+          onAddedField: () => topDisposer,
+          itemField: {
+            fields: { nested: { onAddedField: () => nestedDisposer } },
+          },
+        },
+      },
+      value: { top: [{ nested: 1 }] },
+    })
+    form.value.top = [{ nested: 2 }, { nested: 3 }]
+    expect(nestedDisposer).toHaveBeenCalled() // Because we recreate all array fields on any change
+  })
+})
