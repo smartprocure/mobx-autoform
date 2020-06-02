@@ -298,49 +298,49 @@ describe('Methods and computeds', () => {
 
 describe('Disposers', () => {
   it('Runs getDisposer on form init', () => {
-    let onAddedForm = jest.fn()
-    let onAddedObj = jest.fn()
-    let onAddedNested = jest.fn()
+    let getFormDisposer = jest.fn()
+    let getObjDisposer = jest.fn()
+    let getNestedDisposer = jest.fn()
     let form = Form({
-      getDisposer: onAddedForm,
+      getDisposer: getFormDisposer,
       fields: {
         obj: {
-          getDisposer: onAddedObj,
-          fields: { nested: { getDisposer: onAddedNested } },
+          getDisposer: getObjDisposer,
+          fields: { nested: { getDisposer: getNestedDisposer } },
         },
       },
     })
-    expect(onAddedForm).toHaveBeenCalledWith(form)
-    expect(onAddedObj).toHaveBeenCalledWith(form)
-    expect(onAddedNested).toHaveBeenCalledWith(form)
+    expect(getFormDisposer).toHaveBeenCalledWith(form)
+    expect(getObjDisposer).toHaveBeenCalledWith(form)
+    expect(getNestedDisposer).toHaveBeenCalledWith(form)
   })
 
   it('Runs getDisposer on adding object field', () => {
     let form = Form({ fields: {} })
-    let onAddedObj = jest.fn()
-    let onAddedNested = jest.fn()
+    let getObjDisposer = jest.fn()
+    let getNestedDisposer = jest.fn()
     form.add({
       field: {
-        getDisposer: onAddedObj,
-        fields: { nested: { getDisposer: onAddedNested } },
+        getDisposer: getObjDisposer,
+        fields: { nested: { getDisposer: getNestedDisposer } },
       },
     })
-    expect(onAddedObj).toHaveBeenCalledWith(form)
-    expect(onAddedNested).toHaveBeenCalledWith(form)
+    expect(getObjDisposer).toHaveBeenCalledWith(form)
+    expect(getNestedDisposer).toHaveBeenCalledWith(form)
   })
 
   it('Runs getDisposer on adding array field', () => {
     let getDisposer = jest.fn()
-    let onAddedNested = jest.fn()
+    let getNestedDisposer = jest.fn()
     let form = Form({
       itemField: {
         getDisposer,
-        fields: { nested: { getDisposer: onAddedNested } },
+        fields: { nested: { getDisposer: getNestedDisposer } },
       },
     })
     form.value = [{ nested: 1 }]
     expect(getDisposer).toHaveBeenCalledWith(form)
-    expect(onAddedNested).toHaveBeenCalledWith(form)
+    expect(getNestedDisposer).toHaveBeenCalledWith(form)
   })
 
   it('Runs disposers on form dispose', () => {
