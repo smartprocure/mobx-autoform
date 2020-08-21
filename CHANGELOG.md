@@ -1,3 +1,6 @@
+# 0.7.1
+* set value default to an empty object
+
 # 0.7.0
 * Pass `form` to validator function
 
