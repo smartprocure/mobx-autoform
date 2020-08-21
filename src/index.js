@@ -17,7 +17,7 @@ let flattenField = F.flattenTree(x => x.fields)((...x) =>
 )
 
 export default ({
-  value,
+  value={},
   afterInitField = x => x,
   validate = validators.functions,
   ...config
