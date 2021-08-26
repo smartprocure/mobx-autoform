@@ -17,7 +17,7 @@ let flattenField = F.flattenTree(x => x.fields)((...x) =>
 )
 
 export default ({
-  value={},
+  value = {},
   afterInitField = x => x,
   validate = validators.functions,
   ...config
@@ -137,10 +137,11 @@ export default ({
     getNestedSnapshot: () => F.unflattenObject(form.getSnapshot()),
     getPatch: () => unmerge(saved.value, toJS(state.value)),
     submit: Command(() => {
-      form.submit.state.error = null
-      if (_.isEmpty(form.validate()))
+      if (_.isEmpty(form.validate())) {
+        form.submit.state.error = null
         return config.submit(form.getSnapshot(), form)
-      else throw 'Validation Error'
+      }
+      throw 'Validation Error'
     }),
     get submitError() {
       return F.getOrReturn('message', form.submit.state.error)

@@ -1,3 +1,6 @@
+# 0.8.0
+* Set submit error state to null after validation has occurred
+
 # 0.7.1
 * set value default to an empty object
 
