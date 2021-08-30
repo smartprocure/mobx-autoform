@@ -41,16 +41,17 @@
     "@babel/cli": "^7.14.8",
     "@babel/core": "^7.15.0",
     "@babel/preset-env": "^7.15.0",
-    "babel-eslint": "^10.0.3",
-    "danger": "^9.2.10",
+    "babel-eslint": "^8.0.1",
+    "danger": "^10.5.4",
     "duti": "^0.15.2",
-    "eslint": "^7.32.0",
-    "eslint-config-smartprocure": "^2.0.1",
+    "eslint": "^4.7.2",
+    "eslint-config-smartprocure": "^1.0.0",
+    "eslint-plugin-jest": "^24.4.0",
     "futil": "^1.69.0",
-    "jest": "^27.0.6",
+    "jest": "^27.1.0",
     "lodash": "^4.17.21",
     "mobx": "^4.15.4",
-    "prettier": "^2.0.5"
+    "prettier": "^1.7.2"
   },
   "peerDependencies": {
     "futil": "^1.69.0",
@@ -63,21 +64,11 @@
     "trailingComma": "es5",
     "arrowParens": "avoid"
   },
-  "dependencies": {},
   "babel": {
     "presets": [
       "@babel/preset-env"
     ],
     "sourceMaps": "inline",
     "retainLines": true
-  },
-  "eslintConfig": {
-    "env": {
-      "jest": true
-    },
-    "extends": [
-      "smartprocure"
-    ],
-    "parser": "babel-eslint"
   }
 }
