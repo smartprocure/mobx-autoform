@@ -19,6 +19,7 @@ import Form from 'mobx-autoform'
 import {reaction} from 'mobx'
 
 let form = Form({
+  identifier: 'login_form',
   fields: {
     email: {},
     password: {
@@ -66,6 +67,7 @@ We've looked at just about every single form management package for mobx and rea
 
 | Props | Description |
 | ----- | ----------- |
+| `identifier` | A namespace for this form prepended to the data-testid attribute to make testing easier |
 | `fields` | An object whose keys are the field paths and value is a field config object. Anything passed in will be made an observable. Required. |
 | `submit(snapshot, form)` | An async function that gets called if validation passes when calling `form.submit`. Required. |
 | `validate(form, fields) -> {field: [errors]}` | Optional. Allows using alternative validation strategies. Some alternative validators are available out of the box such as support for `validatorjs` rules. |
@@ -89,6 +91,7 @@ We've looked at just about every single form management package for mobx and rea
 ## Form API
 | prop | description |
 | ---- | ----------- |
+| `identifier` | Name for this form |
 | `fields` | The observable fields object |
 | `getSnapshot()` | A method which returns an object of all of the field values |
 | `getNestedSnapshot()` | Just like `getSnapshot`, but calls F.unflattenObject |
@@ -113,6 +116,7 @@ import {validatorJS} from 'mobx-autoform/validators'
 import V from 'validatorjs'
 
 let form = Form({
+  identifier: 'login_form',
   fields: {
     email: {
       label: 'Email Address',
