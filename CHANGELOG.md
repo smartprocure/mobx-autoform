@@ -1,5 +1,5 @@
 # 0.9.0
-* Allow for data-testid on form elements. Id no identifier is passed "unknown" will be assumed as the namespace
+* Allow for data-testid on form elements. If no identifier is passed "unknown" will be assumed as the namespace
 
 # 0.8.0
 * Set submit error state to null after validation has occurred
