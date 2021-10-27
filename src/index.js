@@ -17,7 +17,7 @@ let flattenField = F.flattenTree(x => x.fields)((...x) =>
 )
 // replace non alphanumeric characters including
 // periods and commas with an underscore
-let getTestId = _.replace(/[\W_.,]+/g, '_')
+
 export default ({
   value = {},
   afterInitField = x => x,
@@ -31,12 +31,11 @@ export default ({
   let initField = (config, rootPath = []) => {
     let dotPath = _.join('.', rootPath)
     let valuePath = ['value', ...rootPath]
-    let label = config.label || _.startCase(_.last(rootPath))
     let node = observable({
       ...config,
       field: _.last(rootPath),
-      label,
-      'data-testid': getTestId([identifier, ...rootPath]),
+      label: config.label || _.startCase(_.last(rootPath)),
+      'data-testid': _.snakeCase([identifier, ...rootPath]),
       get value() {
         return get(valuePath, state)
       },
