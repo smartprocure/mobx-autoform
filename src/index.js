@@ -15,8 +15,6 @@ let fieldPath = _.flow(F.intersperse('fields'), _.compact)
 let flattenField = F.flattenTree(x => x.fields)((...x) =>
   _.join('.', treePath(...x))
 )
-// replace non alphanumeric characters including
-// periods and commas with an underscore
 
 export default ({
   value = {},
