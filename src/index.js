@@ -20,7 +20,8 @@ export default ({
   value = {},
   afterInitField = x => x,
   validate = validators.functions,
-  ...config
+  identifier = 'unknown',
+  ...autoFormConfig
 }) => {
   let saved = {}
   let state = observable({ value, errors: {}, disposers: {} })
@@ -28,11 +29,11 @@ export default ({
   let initField = (config, rootPath = []) => {
     let dotPath = _.join('.', rootPath)
     let valuePath = ['value', ...rootPath]
-
     let node = observable({
       ...config,
       field: _.last(rootPath),
       label: config.label || _.startCase(_.last(rootPath)),
+      'data-testid': _.snakeCase([identifier, ...rootPath]),
       get value() {
         return get(valuePath, state)
       },
@@ -130,7 +131,7 @@ export default ({
         : set(['fields', ...fieldPath(path)], field, tree)
     })({})(clone(_.defaults({ fields: {} }, config)))
 
-  let form = extendObservable(initTree(config), {
+  let form = extendObservable(initTree(autoFormConfig), {
     // Ideally we'd just do toJS(form.value) but we have to maintain backwards
     // compatibility and include fields with undefined values as well
     getSnapshot: () => F.flattenObject(toJS(gatherFormValues(form))),
@@ -139,7 +140,7 @@ export default ({
     submit: Command(() => {
       if (_.isEmpty(form.validate())) {
         form.submit.state.error = null
-        return config.submit(form.getSnapshot(), form)
+        return autoFormConfig.submit(form.getSnapshot(), form)
       }
       throw 'Validation Error'
     }),
