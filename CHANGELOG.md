@@ -1,3 +1,6 @@
+# 0.9.1
+* Do not add a default `fields` property on array fields.
+
 # 0.9.0
 * Allow for data-testid on form elements. If no identifier is passed "unknown" will be assumed as the namespace
 
