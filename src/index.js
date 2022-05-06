@@ -129,7 +129,7 @@ export default ({
       return _.isEmpty(path)
         ? field
         : set(['fields', ...fieldPath(path)], field, tree)
-    })({})(clone(_.defaults({ fields: {} }, config)))
+    })({})(clone(config))
 
   let form = extendObservable(initTree(autoFormConfig), {
     // Ideally we'd just do toJS(form.value) but we have to maintain backwards
