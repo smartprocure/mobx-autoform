@@ -5,24 +5,41 @@ import * as validators from './validators'
 import { tokenizePath, safeJoinPaths, gatherFormValues } from './util'
 import { treePath, omitByPrefixes, pickByPrefixes } from './futil'
 import { get, set, toJS } from './mobx'
+
 export { validators }
 
 let clone = _.flow(toJS, _.cloneDeep)
 let unmerge = _.flow(F.diff, _.mapValues('to'))
 let changed = (x, y) => !_.isEqual(x, y) && !(F.isBlank(x) && F.isBlank(y))
 let Command = F.aspects.command(x => y => extendObservable(y, x))
-let fieldPath = _.flow(F.intersperse('fields'), _.compact)
-let flattenField = F.flattenTree(x => x.fields)((...x) =>
-  _.join('.', treePath(...x))
-)
+
+export let jsonSchemaKeys = {
+  label: 'title',
+  fields: 'properties',
+  itemField: 'items',
+  defaultValue: 'default',
+}
+
+export let legacyKeys = {
+  label: 'label',
+  fields: 'fields',
+  itemField: 'itemField',
+  defaultValue: 'value',
+}
 
 export default ({
   value = {},
   afterInitField = x => x,
   validate = validators.functions,
   identifier = 'unknown',
+  keys = legacyKeys,
   ...autoFormConfig
 }) => {
+  let fieldPath = _.flow(F.intersperse(keys.fields), _.compact)
+  let flattenField = F.flattenTree(x => x[keys.fields])((...x) =>
+    _.join('.', treePath(...x))
+  )
+
   let saved = {}
   let state = observable({ value, errors: {}, disposers: {} })
 
@@ -32,7 +49,7 @@ export default ({
     let node = observable({
       ...config,
       field: _.last(rootPath),
-      label: config.label || _.startCase(_.last(rootPath)),
+      [keys.label]: config[keys.label] || _.startCase(_.last(rootPath)),
       'data-testid': _.snakeCase([identifier, ...rootPath]),
       get value() {
         return get(valuePath, state)
@@ -65,7 +82,10 @@ export default ({
         F.setOn(valuePath, clone(node.value), saved)
       },
       getField(path) {
-        return _.get(safeJoinPaths(fieldPath(tokenizePath(path))), node.fields)
+        return _.get(
+          safeJoinPaths(fieldPath(tokenizePath(path))),
+          node[keys.fields]
+        )
       },
       dispose() {
         _.over(_.values(pickByPrefixes([dotPath], state.disposers)))()
@@ -74,12 +94,12 @@ export default ({
       remove() {
         let parent = form.getField(_.dropRight(1, rootPath)) || form
         // If array field, remove the value and the reaction will take care of the rest
-        if (parent.itemField) parent.value.splice(node.field, 1)
+        if (parent[keys.itemField]) parent.value.splice(node.field, 1)
         // Remove object field
         else {
           node.dispose()
           F.unsetOn(node.field, parent.value)
-          F.unsetOn(node.field, parent.fields)
+          F.unsetOn(node.field, parent[keys.fields])
         }
         // Clean errors for this field and all subfields
         state.errors = omitByPrefixes(dotPath, state.errors)
@@ -88,27 +108,27 @@ export default ({
     node.path = rootPath
 
     // config.value acts as a default value
-    if (_.isUndefined(node.value) && !_.isUndefined(config.value))
-      node.value = clone(config.value)
+    if (_.isUndefined(node.value) && !_.isUndefined(config[keys.defaultValue]))
+      node.value = clone(config[keys.defaultValue])
 
     // Only allow adding subfields for nested object fields
-    if (node.fields)
+    if (node[keys.fields])
       node.add = configs =>
         extendObservable(
-          node.fields,
+          node[keys.fields],
           F.mapValuesIndexed((x, k) => initTree(x, [...rootPath, k]), configs)
         )
 
     // Recreate all array fields on array size changes
-    if (node.itemField) {
-      node.fields = observable([])
+    if (node[keys.itemField]) {
+      node[keys.fields] = observable([])
       state.disposers[dotPath] = reaction(
         () => _.size(node.value),
         size => {
-          _.each(x => x.dispose(), node.fields)
-          node.fields.replace(
+          _.each(x => x.dispose(), node[keys.fields])
+          node[keys.fields].replace(
             _.times(
-              index => initTree(node.itemField, [...rootPath, index]),
+              index => initTree(node[keys.itemField], [...rootPath, index]),
               size
             )
           )
@@ -116,25 +136,28 @@ export default ({
       )
     }
 
-    return afterInitField(node, config)
+    return afterInitField(node, { ...config, keys })
   }
 
   let initTree = (config, rootPath = []) =>
-    F.reduceTree(x => x.fields)((tree, node, ...args) => {
+    F.reduceTree(x => x[keys.fields])((tree, node, ...args) => {
       let path = treePath(node, ...args)
       let field = initField(node, [...rootPath, ...path])
       // Set fields on node to keep recursing
-      if (node.itemField)
-        node.fields = _.times(() => clone(node.itemField), _.size(field.value))
+      if (node[keys.itemField])
+        node[keys.fields] = _.times(
+          () => clone(node[keys.itemField]),
+          _.size(field.value)
+        )
       return _.isEmpty(path)
         ? field
-        : set(['fields', ...fieldPath(path)], field, tree)
+        : set([keys.fields, ...fieldPath(path)], field, tree)
     })({})(clone(config))
 
   let form = extendObservable(initTree(autoFormConfig), {
     // Ideally we'd just do toJS(form.value) but we have to maintain backwards
     // compatibility and include fields with undefined values as well
-    getSnapshot: () => F.flattenObject(toJS(gatherFormValues(form))),
+    getSnapshot: () => F.flattenObject(toJS(gatherFormValues(keys)(form))),
     getNestedSnapshot: () => F.unflattenObject(form.getSnapshot()),
     getPatch: () => unmerge(saved.value, toJS(state.value)),
     submit: Command(() => {
@@ -149,6 +172,8 @@ export default ({
     },
   })
 
+  // This allows new and legacy code to work on the same form
+  form.keys = keys
   form.reset = F.aspectSync({
     before: () => (form.submit.state.error = null),
   })(form.reset)

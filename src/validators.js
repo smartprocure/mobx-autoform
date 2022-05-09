@@ -10,7 +10,7 @@ export let validatorJS = Validator => (form, fields) => {
       _.omitBy(_.isEmpty)
     )(fields)
   )
-  validation.setAttributeNames(_.mapValues('label', fields))
+  validation.setAttributeNames(_.mapValues(form.keys.label, fields))
   return validation.fails() ? validation.errors.all() : {}
 }
 

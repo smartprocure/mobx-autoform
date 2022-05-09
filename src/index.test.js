@@ -1,6 +1,6 @@
 import _ from 'lodash/fp'
 import { reaction } from 'mobx'
-import Form from './index'
+import Form, { jsonSchemaKeys } from './index'
 import { toJS } from './mobx'
 
 require('util').inspect.defaultOptions.depth = null
@@ -71,7 +71,7 @@ describe('Form initialization', () => {
   describe('Pass value to Form. Add fields afterwards', () => {
     let form = null
     beforeAll(() => {
-      form = Form({ value })
+      form = Form({ value, fields: {} })
       form.add(fields)
     })
     afterAll(() => form.dispose())
@@ -83,6 +83,47 @@ describe('Form initialization', () => {
     beforeAll(() => {
       form = Form({ fields })
       form.value = value
+    })
+    afterAll(() => form.dispose())
+    it.each(paths)('Initialized %s', path => testPath(form, path))
+  })
+
+  describe('Should initialize JSON schema flavored form', () => {
+    let form = null
+    beforeAll(() => {
+      form = Form({
+        keys: jsonSchemaKeys,
+        properties: {
+          location: {
+            properties: {
+              'country.state': {
+                title: 'Dotted field name',
+                default: value.location['country.state'],
+                properties: {
+                  zip: {},
+                  name: {},
+                },
+              },
+              addresses: {
+                title: 'Array field',
+                default: value.location.addresses,
+                items: {
+                  title: 'Item field is a record',
+                  properties: {
+                    street: {},
+                    tenants: {
+                      title: 'Array field',
+                      items: {
+                        title: 'Item field is a primitive',
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      })
     })
     afterAll(() => form.dispose())
     it.each(paths)('Initialized %s', path => testPath(form, path))
