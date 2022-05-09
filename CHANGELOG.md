@@ -1,3 +1,6 @@
+# 0.10.0
+* Support a JSON schema definition for the form
+
 # 0.9.1
 * Do not add a default `fields` property on array fields.
 
