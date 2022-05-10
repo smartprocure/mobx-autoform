@@ -1,3 +1,6 @@
+# 0.11.0
+* Support overriding `getSnapshot` and `getNestedSnapshot`
+
 # 0.10.0
 * Support a JSON schema definition for the form
 
