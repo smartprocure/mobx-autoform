@@ -18,8 +18,8 @@ export let safeJoinPaths = _.flow(
 // Walk tree of fields and gather values. If the field has no value,
 // still set a key for the field but with a value of undefined
 // TODO: futil F.mapTree
-export let gatherFormValues = keys =>
-  reduceTreePost(x => x[keys.fields])((tree, x, ...xs) =>
+export let gatherFormValues = form =>
+  reduceTreePost(x => x[form.keys.fields])((tree, x, ...xs) =>
     // Only walk leaf nodes
-    !_.isEmpty(x[keys.fields]) ? tree : _.set(treePath(x, ...xs), x.value, tree)
-  )({})
+    !_.isEmpty(x[form.keys.fields]) ? tree : _.set(treePath(x, ...xs), x.value, tree)
+  )({})(form)

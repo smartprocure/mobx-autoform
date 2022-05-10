@@ -21,7 +21,8 @@ it('safeJoinPaths', () => {
 describe('gatherFormValues()', () => {
   it('legacyKeys', () => {
     expect(
-      gatherFormValues(legacyKeys)({
+      gatherFormValues({
+        keys: legacyKeys,
         fields: {
           'a.b': { fields: [{ value: 1 }, { value: 2 }] },
           c: { fields: { d: {} } },
@@ -33,7 +34,8 @@ describe('gatherFormValues()', () => {
 
   it('jsonSchemaKeys', () => {
     expect(
-      gatherFormValues(jsonSchemaKeys)({
+      gatherFormValues({
+        keys: jsonSchemaKeys,
         properties: {
           'a.b': { properties: [{ value: 1 }, { value: 2 }] },
           c: { properties: { d: {} } },

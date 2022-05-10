@@ -27,12 +27,21 @@ export let legacyKeys = {
   defaultValue: 'value',
 }
 
+// Ideally we'd just do toJS(form.value) but we have to maintain backwards
+// compatibility and include fields with undefined values as well
+let defaultGetSnapshot = form =>
+  F.flattenObject(toJS(gatherFormValues(form)))
+
+let defaultGetNestedSnapshot = form => F.unflattenObject(form.getSnapshot())
+
 export default ({
   value = {},
   afterInitField = x => x,
   validate = validators.functions,
   identifier = 'unknown',
   keys = legacyKeys,
+  getSnapshot = defaultGetSnapshot,
+  getNestedSnapshot = defaultGetNestedSnapshot,
   ...autoFormConfig
 }) => {
   let fieldPath = _.flow(F.intersperse(keys.fields), _.compact)
@@ -155,10 +164,8 @@ export default ({
     })({})(clone(config))
 
   let form = extendObservable(initTree(autoFormConfig), {
-    // Ideally we'd just do toJS(form.value) but we have to maintain backwards
-    // compatibility and include fields with undefined values as well
-    getSnapshot: () => F.flattenObject(toJS(gatherFormValues(keys)(form))),
-    getNestedSnapshot: () => F.unflattenObject(form.getSnapshot()),
+    getSnapshot: () => getSnapshot(form),
+    getNestedSnapshot: () => getNestedSnapshot(form),
     getPatch: () => unmerge(saved.value, toJS(state.value)),
     submit: Command(() => {
       if (_.isEmpty(form.validate())) {
