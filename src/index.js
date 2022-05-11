@@ -9,7 +9,6 @@ import { get, set, toJS } from './mobx'
 export { validators }
 
 let clone = _.flow(toJS, _.cloneDeep)
-let unmerge = _.flow(F.diff, _.mapValues('to'))
 let changed = (x, y) => !_.isEqual(x, y) && !(F.isBlank(x) && F.isBlank(y))
 let Command = F.aspects.command(x => y => extendObservable(y, x))
 
@@ -27,10 +26,12 @@ export let legacyKeys = {
   defaultValue: 'value',
 }
 
+let defaultGetPatch = form =>
+  _.mapValues('to', F.diff(form.saved.value, toJS(form.value)))
+
 // Ideally we'd just do toJS(form.value) but we have to maintain backwards
 // compatibility and include fields with undefined values as well
-let defaultGetSnapshot = form =>
-  F.flattenObject(toJS(gatherFormValues(form)))
+let defaultGetSnapshot = form => F.flattenObject(toJS(gatherFormValues(form)))
 
 let defaultGetNestedSnapshot = form => F.unflattenObject(form.getSnapshot())
 
@@ -40,6 +41,7 @@ export default ({
   validate = validators.functions,
   identifier = 'unknown',
   keys = legacyKeys,
+  getPatch = defaultGetPatch,
   getSnapshot = defaultGetSnapshot,
   getNestedSnapshot = defaultGetNestedSnapshot,
   ...autoFormConfig
@@ -164,9 +166,9 @@ export default ({
     })({})(clone(config))
 
   let form = extendObservable(initTree(autoFormConfig), {
+    getPatch: () => getPatch(form),
     getSnapshot: () => getSnapshot(form),
     getNestedSnapshot: () => getNestedSnapshot(form),
-    getPatch: () => unmerge(saved.value, toJS(state.value)),
     submit: Command(() => {
       if (_.isEmpty(form.validate())) {
         form.submit.state.error = null
@@ -181,6 +183,7 @@ export default ({
 
   // This allows new and legacy code to work on the same form
   form.keys = keys
+  form.saved = saved
   form.reset = F.aspectSync({
     before: () => (form.submit.state.error = null),
   })(form.reset)

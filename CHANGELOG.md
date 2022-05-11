@@ -1,3 +1,6 @@
+# 0.12.0
+* Support overriding `getPatch`
+
 # 0.11.0
 * Support overriding `getSnapshot` and `getNestedSnapshot`
 
