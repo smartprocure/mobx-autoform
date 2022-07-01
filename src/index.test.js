@@ -1,7 +1,9 @@
 import _ from 'lodash/fp'
-import { reaction } from 'mobx'
+import { reaction, configure } from 'mobx'
 import Form, { jsonSchemaKeys } from './index'
 import { toJS } from './mobx'
+
+configure({ enforceActions: 'never', useProxies: 'never' })
 
 require('util').inspect.defaultOptions.depth = null
 
@@ -176,7 +178,7 @@ describe('Methods and computeds', () => {
         },
       ],
       ['location.addresses', [{ street: 'Meridian', tenants: ['John'] }]],
-    ])('reset path "%s" to "%o"', (path, expected) => {
+    ])('reset path "%s"', (path, expected) => {
       let field = _.isUndefined(path) ? form : form.getField(path)
       field.value = ['whatever']
       field.reset()

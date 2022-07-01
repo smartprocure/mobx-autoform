@@ -1,5 +1,7 @@
-import { observable, reaction } from 'mobx'
-import { get, set } from './mobx'
+import { observable, reaction, configure } from 'mobx'
+import { get, set, toJS } from './mobx'
+
+configure({ enforceActions: 'never', useProxies: 'never' })
 
 describe('get/set', () => {
   it.each([
@@ -16,5 +18,40 @@ describe('get/set', () => {
     set(['a', 'b', 'c'], 2, o)
     expect(fn).toHaveBeenCalledWith(2)
     dispose()
+  })
+})
+
+describe('toJS', () => {
+  it('should clone nested properties', () => {
+    let obj = observable({ a: { b: 2 }, c: 3 })
+    let actual = toJS(obj)
+    obj.a.b = 10
+    expect(actual.a.b).not.toEqual(obj.a.b)
+  })
+  it('should clone top-level observable', () => {
+    let actual = toJS(observable({ a: { b: 2 }, c: 3 }))
+    let expected = { a: { b: 2 }, c: 3 }
+    expect(actual).toEqual(expected)
+  })
+  it('should clone nested observable', () => {
+    let actual = toJS({ a: observable({ b: 2 }), c: 3 })
+    let expected = { a: { b: 2 }, c: 3 }
+    expect(actual).toEqual(expected)
+  })
+  it('should evaluate getter', () => {
+    let actual = toJS({
+      a: observable({ b: 2 }),
+      get c() {
+        return 3
+      },
+    })
+    let expected = { a: { b: 2 }, c: 3 }
+    expect(actual).toEqual(expected)
+  })
+  it('should not modify original function', () => {
+    let c = () => 3
+    let actual = toJS({ a: observable({ b: 2 }), c })
+    let expected = { a: { b: 2 }, c }
+    expect(actual).toEqual(expected)
   })
 })

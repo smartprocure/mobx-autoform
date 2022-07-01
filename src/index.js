@@ -8,7 +8,6 @@ import { get, set, toJS } from './mobx'
 
 export { validators }
 
-let clone = _.flow(toJS, _.cloneDeep)
 let changed = (x, y) => !_.isEqual(x, y) && !(F.isBlank(x) && F.isBlank(y))
 let Command = F.aspects.command(x => y => extendObservable(y, x))
 
@@ -78,7 +77,7 @@ export default ({
         return changed(_.get(valuePath, saved), toJS(node.value))
       },
       reset() {
-        node.value = clone(_.get(valuePath, saved))
+        node.value = toJS(_.get(valuePath, saved))
         state.errors = omitByPrefixes([dotPath], state.errors)
       },
       validate(paths = [dotPath]) {
@@ -90,7 +89,7 @@ export default ({
         return errors
       },
       clean() {
-        F.setOn(valuePath, clone(node.value), saved)
+        F.setOn(valuePath, toJS(node.value), saved)
       },
       getField(path) {
         return _.get(
@@ -120,7 +119,7 @@ export default ({
 
     // config.value acts as a default value
     if (_.isUndefined(node.value) && !_.isUndefined(config[keys.defaultValue]))
-      node.value = clone(config[keys.defaultValue])
+      node.value = toJS(config[keys.defaultValue])
 
     // Only allow adding subfields for nested object fields
     if (node[keys.fields])
@@ -157,29 +156,31 @@ export default ({
       // Set fields on node to keep recursing
       if (node[keys.itemField])
         node[keys.fields] = _.times(
-          () => clone(node[keys.itemField]),
+          () => toJS(node[keys.itemField]),
           _.size(field.value)
         )
       return _.isEmpty(path)
         ? field
         : set([keys.fields, ...fieldPath(path)], field, tree)
-    })({})(clone(config))
+    })({})(toJS(config))
 
   let form = extendObservable(initTree(autoFormConfig), {
     getPatch: () => getPatch(form),
     getSnapshot: () => getSnapshot(form),
     getNestedSnapshot: () => getNestedSnapshot(form),
-    submit: Command(() => {
-      if (_.isEmpty(form.validate())) {
-        form.submit.state.error = null
-        return autoFormConfig.submit(form.getSnapshot(), form)
-      }
-      throw 'Validation Error'
-    }),
     get submitError() {
       return F.getOrReturn('message', form.submit.state.error)
     },
   })
+  let submit = Command(() => {
+    if (_.isEmpty(form.validate())) {
+      form.submit.state.error = null
+      return autoFormConfig.submit(form.getSnapshot(), form)
+    }
+    throw 'Validation Error'
+  })
+  form.submit = submit
+  form.submit.state = submit.state
 
   // This allows new and legacy code to work on the same form
   form.keys = keys
