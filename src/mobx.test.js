@@ -1,7 +1,5 @@
-import { observable, reaction, configure } from 'mobx'
-import { get, set, toJS } from './mobx'
-
-configure({ enforceActions: 'never', useProxies: 'never' })
+import { reaction } from 'mobx'
+import { get, set, toJS, observable } from './mobx'
 
 describe('get/set', () => {
   it.each([

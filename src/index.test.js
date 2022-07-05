@@ -1,9 +1,7 @@
 import _ from 'lodash/fp'
-import { reaction, configure } from 'mobx'
+import { reaction } from 'mobx'
 import Form, { jsonSchemaKeys } from './index'
 import { toJS } from './mobx'
-
-configure({ enforceActions: 'never', useProxies: 'never' })
 
 require('util').inspect.defaultOptions.depth = null
 

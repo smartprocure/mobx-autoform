@@ -1,10 +1,10 @@
 import F from 'futil'
 import _ from 'lodash/fp'
-import { observable, extendObservable, reaction } from 'mobx'
+import { extendObservable, reaction } from 'mobx'
 import * as validators from './validators'
 import { tokenizePath, safeJoinPaths, gatherFormValues } from './util'
 import { treePath, omitByPrefixes, pickByPrefixes } from './futil'
-import { get, set, toJS } from './mobx'
+import { get, set, toJS, observable } from './mobx'
 
 export { validators }
 
@@ -179,7 +179,7 @@ export default ({
     }
     throw 'Validation Error'
   })
-  form.submit = submit
+  extendObservable(form, { submit })
   form.submit.state = submit.state
 
   // This allows new and legacy code to work on the same form
