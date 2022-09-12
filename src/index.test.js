@@ -176,7 +176,7 @@ describe('Methods and computeds', () => {
         },
       ],
       ['location.addresses', [{ street: 'Meridian', tenants: ['John'] }]],
-    ])('reset path "%s" to "%o"', (path, expected) => {
+    ])('reset path "%s"', (path, expected) => {
       let field = _.isUndefined(path) ? form : form.getField(path)
       field.value = ['whatever']
       field.reset()

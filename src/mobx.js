@@ -2,9 +2,22 @@ import _ from 'lodash/fp'
 import F from 'futil'
 import * as m from 'mobx'
 
-export let toJS = x => m.toJS(x, { recurseEverything: true })
+// Observable without proxy for any version of mobx
+export let observable = x => {
+  try {
+    return m.observable(x, {}, { proxy: false })
+  } catch (e) {
+    return m.observable(x)
+  }
+}
 
-// Only supports array paths for now
+// https://github.com/mobxjs/mobx/issues/2912#issuecomment-825890901
+export let toJS = x =>
+  _.cloneDeepWith(value => {
+    if (m.isObservable(value)) return m.toJS(value)
+  }, x)
+
+// Nested path getter/setter. Only supports array paths for now
 
 export let get = (path, obj) =>
   _.reduce((v, k) => (m.isObservable(v) ? m.get(v, k) : _.get(k, v)), obj, path)
