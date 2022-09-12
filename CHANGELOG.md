@@ -1,3 +1,6 @@
+# 0.13.0
+* Compatibility with mobx>=4
+
 # 0.12.0
 * Support overriding `getPatch`
 
