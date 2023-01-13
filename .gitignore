@@ -61,9 +61,18 @@ typings/
 .next
 
 # Build Output
-lib
+dist/*
 lint-results.json
 test-results.json
 
 #OS X
 .DS_Store
+
+# yarn stuff
+# see https://yarnpkg.com/getting-started/qa#which-files-should-be-gitignored
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions

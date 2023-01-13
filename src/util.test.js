@@ -1,5 +1,5 @@
-import { legacyKeys, jsonSchemaKeys } from './index'
-import { tokenizePath, safeJoinPaths, gatherFormValues } from './util'
+import { legacyKeys, jsonSchemaKeys } from './index.js'
+import { tokenizePath, safeJoinPaths, gatherFormValues } from './util.js'
 
 it('tokenizePath', () => {
   expect(tokenizePath()).toEqual([])

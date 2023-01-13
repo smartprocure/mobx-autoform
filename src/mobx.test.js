@@ -1,5 +1,5 @@
 import { reaction } from 'mobx'
-import { get, set, toJS, observable } from './mobx'
+import { get, set, toJS, observable } from './mobx.js'
 
 describe('get/set', () => {
   it.each([

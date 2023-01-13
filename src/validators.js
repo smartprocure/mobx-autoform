@@ -1,6 +1,6 @@
 import F from 'futil'
-import _ from 'lodash/fp'
-import { toJS } from './mobx'
+import _ from 'lodash/fp.js'
+import { toJS } from './mobx.js'
 
 export let validatorJS = Validator => (form, fields) => {
   let validation = new Validator(

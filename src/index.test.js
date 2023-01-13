@@ -1,7 +1,7 @@
-import _ from 'lodash/fp'
+import _ from 'lodash/fp.js'
 import { reaction } from 'mobx'
-import Form, { jsonSchemaKeys } from './index'
-import { toJS } from './mobx'
+import Form, { jsonSchemaKeys } from './index.js'
+import { toJS } from './mobx.js'
 
 require('util').inspect.defaultOptions.depth = null
 

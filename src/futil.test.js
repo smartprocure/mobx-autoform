@@ -1,5 +1,5 @@
 import F from 'futil'
-import { omitByPrefixes, pickByPrefixes, reduceTreePost } from './futil'
+import { omitByPrefixes, pickByPrefixes, reduceTreePost } from './futil.js'
 
 it('reduceTreePost', () => {
   let x = {
