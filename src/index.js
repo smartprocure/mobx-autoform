@@ -1,10 +1,10 @@
 import F from 'futil'
-import _ from 'lodash/fp'
+import _ from 'lodash/fp.js'
 import { extendObservable, reaction } from 'mobx'
-import * as validators from './validators'
-import { tokenizePath, safeJoinPaths, gatherFormValues } from './util'
-import { treePath, omitByPrefixes, pickByPrefixes } from './futil'
-import { get, set, toJS, observable } from './mobx'
+import * as validators from './validators.js'
+import { tokenizePath, safeJoinPaths, gatherFormValues } from './util.js'
+import { treePath, omitByPrefixes, pickByPrefixes } from './futil.js'
+import { get, set, toJS, observable } from './mobx.js'
 
 export { validators }
 

@@ -1,21 +1,21 @@
 {
   "name": "mobx-autoform",
-  "version": "0.13.0",
+  "version": "0.13.1",
   "description": "Ridiculously simple form state management with mobx",
-  "main": "lib/index.js",
+  "type": "module",
+  "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.js",
+  "files": [
+    "./dist"
+  ],
   "scripts": {
-    "build": "babel ./src --out-dir ./lib --delete-dir-on-start",
-    "watch": "npm run build -- --watch",
-    "test": "jest src",
-    "test:watch": "jest --watch --",
-    "test:ci": "jest --coverage --json --outputFile=test-results.json",
-    "danger": "duti",
-    "lint": "eslint src/",
-    "lint:ci": "npm run lint -- -o lint-results.json -f json",
-    "lint-fix": "eslint src/ --fix",
-    "fmt": "prettier --write src/**/*.js",
-    "duti:fix": "npm run fmt && npm run lint-fix && npm run fmt",
-    "prepublish": "npm run build"
+    "prepack": "node scripts/build.js",
+    "test": "jest",
+    "test:ci": "jest --coverage --json --outputFile test-results.json",
+    "fmt": "prettier --ignore-path .gitignore --write ./src",
+    "lint": "eslint --ignore-path .gitignore .",
+    "lint:ci": "yarn lint -o lint-results.json -f json",
+    "duti:fix": "yarn lint --fix && yarn fmt"
   },
   "repository": {
     "type": "git",
@@ -38,25 +38,24 @@
     "url": "https://github.com/smartprocure/mobx-autoform/issues"
   },
   "homepage": "https://github.com/smartprocure/mobx-autoform#readme",
+  "dependencies": {
+    "futil": "^1.71.8",
+    "lodash": "^4.17.21"
+  },
   "devDependencies": {
-    "@babel/cli": "^7.14.8",
-    "@babel/core": "^7.15.0",
-    "@babel/preset-env": "^7.15.0",
-    "babel-eslint": "^8.0.1",
-    "danger": "^10.5.4",
+    "danger": "^11.2.1",
+    "danger-plugin-coverage": "^1.6.2",
     "duti": "^0.15.2",
-    "eslint": "^4.7.2",
-    "eslint-config-smartprocure": "^1.0.0",
-    "eslint-plugin-jest": "^24.4.0",
-    "futil": "^1.69.0",
-    "jest": "^27.1.0",
-    "lodash": "^4.17.21",
+    "esbuild": "^0.16.17",
+    "esbuild-jest": "^0.5.0",
+    "eslint": "^8.31.0",
+    "eslint-plugin-import": "^2.27.4",
+    "glob": "^8.0.3",
+    "jest": "^29.3.1",
     "mobx": ">=4.0.0",
-    "prettier": "^1.7.2"
+    "prettier": "^2.8.2"
   },
   "peerDependencies": {
-    "futil": "^1.69.0",
-    "lodash": "^4.17.21",
     "mobx": ">=4.0.0"
   },
   "prettier": {
@@ -65,11 +64,5 @@
     "trailingComma": "es5",
     "arrowParens": "avoid"
   },
-  "babel": {
-    "presets": [
-      "@babel/preset-env"
-    ],
-    "sourceMaps": "inline",
-    "retainLines": true
-  }
+  "packageManager": "yarn@3.3.1"
 }

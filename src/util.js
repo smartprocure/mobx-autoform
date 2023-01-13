@@ -1,5 +1,5 @@
-import _ from 'lodash/fp'
-import { reduceTreePost, treePath } from './futil'
+import _ from 'lodash/fp.js'
+import { reduceTreePost, treePath } from './futil.js'
 
 export let tokenizePath = path => {
   if (_.isNumber(path)) path = [_.toString(path)]
