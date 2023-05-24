@@ -35,6 +35,7 @@ let defaultGetSnapshot = form => F.flattenObject(toJS(gatherFormValues(form)))
 let defaultGetNestedSnapshot = form => F.unflattenObject(form.getSnapshot())
 
 export default ({
+  submit: configSubmit,
   value = {},
   afterInitField = x => x,
   validate = validators.functions,
@@ -175,7 +176,7 @@ export default ({
   let submit = Command(() => {
     if (_.isEmpty(form.validate())) {
       form.submit.state.error = null
-      return autoFormConfig.submit(form.getSnapshot(), form)
+      return configSubmit(form.getSnapshot(), form)
     }
     throw 'Validation Error'
   })
