@@ -389,7 +389,7 @@ describe('submit()', () => {
     expect(form.submit.state.error).toBe('Validation Error')
     expect(form.submitError).toBe('Validation Error')
   })
-  it('succeeds when validation and submit() run', async () => {
+  it('succeeds when validation and sync submit() run', async () => {
     const submit = () => {
       return 'submit run'
     }
@@ -398,8 +398,36 @@ describe('submit()', () => {
     expect(form.submit.state.status).toBe('succeeded')
     expect(result).toBe('submit run')
   })
-  it('has errors when submit throws with ValidationError', async () => {
+  it('succeeds when validation and async submit() run', async () => {
+    const submit = async () => {
+      return 'submit run'
+    }
+    form = Form({ fields: goodFields, value: goodValue, submit })
+    const result = await form.submit()
+    expect(form.submit.state.status).toBe('succeeded')
+    expect(result).toBe('submit run')
+  })
+  it('has errors when sync submit throws with ValidationError', async () => {
     const submit = () => {
+      throw new ValidationError('My submit failed', {
+        'location.addresses.0.tenants.0': ['invalid format'],
+      })
+    }
+    form = Form({ fields: goodFields, value: goodValue, submit })
+    const result = await form.submit()
+    expect(form.submit.state.status).toBe('failed')
+    expect(form.submit.state.error.message).toBe('My submit failed')
+    expect(form.submit.state.error.cause).toEqual({
+      'location.addresses.0.tenants.0': ['invalid format'],
+    })
+    expect(form.errors).toEqual({
+      'location.addresses.0.tenants.0': ['invalid format'],
+    })
+    expect(form.submitError).toBe('My submit failed')
+    expect(result).toBeUndefined()
+  })
+  it('has errors when async submit throws with ValidationError', async () => {
+    const submit = async () => {
       throw new ValidationError('My submit failed', {
         'location.addresses.0.tenants.0': ['invalid format'],
       })

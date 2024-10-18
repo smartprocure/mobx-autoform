@@ -39,6 +39,13 @@ let defaultGetSnapshot = form => F.flattenObject(toJS(gatherFormValues(form)))
 
 let defaultGetNestedSnapshot = form => F.unflattenObject(form.getSnapshot())
 
+const handleSubmitErr = (state, err) => {
+  if (err instanceof ValidationError) {
+    state.errors = err.cause
+  }
+  throw err
+}
+
 export default ({
   submit: configSubmit,
   value = {},
@@ -182,12 +189,12 @@ export default ({
     if (_.isEmpty(form.validate())) {
       form.submit.state.error = null
       try {
-        return configSubmit(form.getSnapshot(), form)
+        // Handle both sync and sync configSubmit
+        return Promise.resolve(configSubmit(form.getSnapshot(), form)).catch(
+          err => handleSubmitErr(state, err)
+        )
       } catch (err) {
-        if (err instanceof ValidationError) {
-          state.errors = err.cause
-        }
-        throw err
+        handleSubmitErr(state, err)
       }
     }
     throw 'Validation Error'
