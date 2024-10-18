@@ -1,3 +1,7 @@
+# 0.14.0
+
+- Support form errors via an `ValidationError` on `submit`.
+
 # 0.13.2
 
 - Do not extend submit when already present

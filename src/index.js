@@ -2,11 +2,16 @@ import F from 'futil'
 import _ from 'lodash/fp.js'
 import { extendObservable, reaction } from 'mobx'
 import * as validators from './validators.js'
-import { tokenizePath, safeJoinPaths, gatherFormValues } from './util.js'
+import {
+  tokenizePath,
+  safeJoinPaths,
+  gatherFormValues,
+  ValidationError,
+} from './util.js'
 import { treePath, omitByPrefixes, pickByPrefixes } from './futil.js'
 import { get, set, toJS, observable } from './mobx.js'
 
-export { validators }
+export { validators, ValidationError }
 
 let changed = (x, y) => !_.isEqual(x, y) && !(F.isBlank(x) && F.isBlank(y))
 let Command = F.aspects.command(x => y => extendObservable(y, x))
@@ -33,6 +38,13 @@ let defaultGetPatch = form =>
 let defaultGetSnapshot = form => F.flattenObject(toJS(gatherFormValues(form)))
 
 let defaultGetNestedSnapshot = form => F.unflattenObject(form.getSnapshot())
+
+const handleSubmitErr = (state, err) => {
+  if (err instanceof ValidationError) {
+    state.errors = err.cause
+  }
+  throw err
+}
 
 export default ({
   submit: configSubmit,
@@ -176,7 +188,14 @@ export default ({
   let submit = Command(() => {
     if (_.isEmpty(form.validate())) {
       form.submit.state.error = null
-      return configSubmit(form.getSnapshot(), form)
+      try {
+        // Handle both sync and sync configSubmit
+        return Promise.resolve(configSubmit(form.getSnapshot(), form)).catch(
+          err => handleSubmitErr(state, err)
+        )
+      } catch (err) {
+        handleSubmitErr(state, err)
+      }
     }
     throw 'Validation Error'
   })

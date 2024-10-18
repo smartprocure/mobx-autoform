@@ -219,3 +219,7 @@ export let CommandButton = observer(({command, children}) => (
   </button>
 ))
 ```
+
+## Capturing submission errors
+
+Custom errors can be captured from `form.submit()` by throwing `ValidationError("Submission failed", errors)`. The `errros` object is of the same shape as the errors given by `validate()` on the form, that is, the keys are the fields and the values are arrays of errors for the field. 
