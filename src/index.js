@@ -2,11 +2,16 @@ import F from 'futil'
 import _ from 'lodash/fp.js'
 import { extendObservable, reaction } from 'mobx'
 import * as validators from './validators.js'
-import { tokenizePath, safeJoinPaths, gatherFormValues } from './util.js'
+import {
+  tokenizePath,
+  safeJoinPaths,
+  gatherFormValues,
+  ValidationError,
+} from './util.js'
 import { treePath, omitByPrefixes, pickByPrefixes } from './futil.js'
 import { get, set, toJS, observable } from './mobx.js'
 
-export { validators }
+export { validators, ValidationError }
 
 let changed = (x, y) => !_.isEqual(x, y) && !(F.isBlank(x) && F.isBlank(y))
 let Command = F.aspects.command(x => y => extendObservable(y, x))
@@ -176,7 +181,14 @@ export default ({
   let submit = Command(() => {
     if (_.isEmpty(form.validate())) {
       form.submit.state.error = null
-      return configSubmit(form.getSnapshot(), form)
+      try {
+        return configSubmit(form.getSnapshot(), form)
+      } catch (err) {
+        if (err instanceof ValidationError) {
+          state.errors = err.cause
+        }
+        throw err
+      }
     }
     throw 'Validation Error'
   })
