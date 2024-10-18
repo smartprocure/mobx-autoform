@@ -421,6 +421,7 @@ describe('submit()', () => {
       'location.addresses.0.tenants.0': ['invalid format'],
     })
     expect(form.errors).toEqual({
+      '': 'My submit failed',
       'location.addresses.0.tenants.0': ['invalid format'],
     })
     expect(form.submitError).toBe('My submit failed')
@@ -440,6 +441,7 @@ describe('submit()', () => {
       'location.addresses.0.tenants.0': ['invalid format'],
     })
     expect(form.errors).toEqual({
+      '': 'My submit failed',
       'location.addresses.0.tenants.0': ['invalid format'],
     })
     expect(form.submitError).toBe('My submit failed')
