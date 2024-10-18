@@ -399,9 +399,9 @@ describe('submit()', () => {
   })
   it('has errors when submit throws with cause', async () => {
     const submit = () => {
-      throw new ValidationError('My submit failed', 
-         { 'location.addresses.0.tenants.0': ['invalid format'] }
-      )
+      throw new ValidationError('My submit failed', {
+        'location.addresses.0.tenants.0': ['invalid format'],
+      })
     }
     form = Form({ fields: goodFields, value: goodValue, submit })
     const result = await form.submit()

@@ -26,10 +26,10 @@ export let gatherFormValues = form =>
       : _.set(treePath(x, ...xs), x.value, tree)
   )({})(form)
 
-  export class ValidationError extends Error {
-      name = 'ValidationError'
-    constructor(message, errors) {
-      super(message)
-      this.cause = errors
-    }
+export class ValidationError extends Error {
+  name = 'ValidationError'
+  constructor(message, errors) {
+    super(message)
+    this.cause = errors
   }
+}
