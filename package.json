@@ -1,6 +1,6 @@
 {
   "name": "mobx-autoform",
-  "version": "0.13.2",
+  "version": "0.14.0",
   "description": "Ridiculously simple form state management with mobx",
   "type": "module",
   "main": "dist/cjs/index.js",
