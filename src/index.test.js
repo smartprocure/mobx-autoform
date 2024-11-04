@@ -421,7 +421,6 @@ describe('submit()', () => {
       'location.addresses.0.tenants.0': ['invalid format'],
     })
     expect(form.errors).toEqual({
-      '': 'My submit failed',
       'location.addresses.0.tenants.0': ['invalid format'],
     })
     expect(form.submitError).toBe('My submit failed')
@@ -431,6 +430,7 @@ describe('submit()', () => {
     const submit = async () => {
       throw new ValidationError('My submit failed', {
         'location.addresses.0.tenants.0': ['invalid format'],
+        '': ['top level error'],
       })
     }
     form = Form({ fields: goodFields, value: goodValue, submit })
@@ -439,10 +439,11 @@ describe('submit()', () => {
     expect(form.submit.state.error.message).toBe('My submit failed')
     expect(form.submit.state.error.cause).toEqual({
       'location.addresses.0.tenants.0': ['invalid format'],
+      '': ['top level error'],
     })
     expect(form.errors).toEqual({
-      '': 'My submit failed',
       'location.addresses.0.tenants.0': ['invalid format'],
+      '': ['top level error'],
     })
     expect(form.submitError).toBe('My submit failed')
     expect(result).toBeUndefined()

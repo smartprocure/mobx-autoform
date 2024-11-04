@@ -185,7 +185,7 @@ export default ({
         return await configSubmit(form.getSnapshot(), form)
       } catch (err) {
         if (err instanceof ValidationError) {
-          state.errors = { '': err.message, ...err.cause }
+          state.errors = err.cause
         }
         throw err
       }

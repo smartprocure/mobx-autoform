@@ -1,3 +1,7 @@
+# 0.14.1
+
+- FIX: errors[''] is nothing special, remove special handling for it.
+
 # 0.14.0
 
 - Support form errors via an `ValidationError` on `submit`.
