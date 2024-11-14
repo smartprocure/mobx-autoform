@@ -1,3 +1,7 @@
+# 0.14.2
+
+- FIX: remove() removes all errors, not just the removed field.
+
 # 0.14.1
 
 - FIX: errors[''] is nothing special, remove special handling for it.

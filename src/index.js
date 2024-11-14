@@ -118,7 +118,7 @@ export default ({
           F.unsetOn(node.field, parent[keys.fields])
         }
         // Clean errors for this field and all subfields
-        state.errors = omitByPrefixes(dotPath, state.errors)
+        state.errors = omitByPrefixes([dotPath], state.errors)
       },
     })
     node.path = rootPath
