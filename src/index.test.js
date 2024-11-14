@@ -192,7 +192,7 @@ describe('Methods and computeds', () => {
     expect(tenants.fields).toEqual([])
     expect(tenants.value).toEqual([])
     expect(_.size(form.errors)).toBe(1)
-    
+
     tenants.remove()
     expect(form.getField('location.addresses.0.tenants')).toBeUndefined()
     expect(form.getField('location.addresses.0').value).toEqual({
