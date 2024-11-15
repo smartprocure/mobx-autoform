@@ -185,10 +185,13 @@ describe('Methods and computeds', () => {
   })
 
   it('remove()', () => {
+    form.validate()
+    expect(_.size(form.errors)).toBe(2)
     form.getField('location.addresses.0.tenants.0').remove()
     let tenants = form.getField('location.addresses.0.tenants')
     expect(tenants.fields).toEqual([])
     expect(tenants.value).toEqual([])
+    expect(_.size(form.errors)).toBe(1)
 
     tenants.remove()
     expect(form.getField('location.addresses.0.tenants')).toBeUndefined()
