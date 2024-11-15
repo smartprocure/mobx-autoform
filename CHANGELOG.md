@@ -1,3 +1,7 @@
+# 0.14.3
+
+- FIX: On removing an array item, corresponding errors must also be spliced.
+
 # 0.14.2
 
 - FIX: remove() removes all errors, not just the removed field.

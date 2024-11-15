@@ -39,6 +39,26 @@ let defaultGetSnapshot = form => F.flattenObject(toJS(gatherFormValues(form)))
 
 let defaultGetNestedSnapshot = form => F.unflattenObject(form.getSnapshot())
 
+// Splice the form errors when a array item is removed
+const spliceErrors = (errors, parent, nodePosition) => {
+  const parentPath = parent.join('.')
+  const parentLength = parent.length
+  const arrayErrors = pickByPrefixes([parentPath], errors)
+  const newErrors = omitByPrefixes([parentPath], errors)
+  for (const [key, value] of Object.entries(arrayErrors)) {
+    const keyFields = key.split('.')
+    const idx = parseInt(keyFields[parentLength])
+    if (idx > nodePosition) {
+      keyFields.splice(parentLength, 1, idx - 1)
+      const newKey = keyFields.join('.')
+      newErrors[newKey] = value
+    } else if (idx < nodePosition) {
+      newErrors[key] = value
+    }
+  }
+  return newErrors
+}
+
 export default ({
   submit: configSubmit,
   value = {},
@@ -110,15 +130,18 @@ export default ({
       remove() {
         let parent = form.getField(_.dropRight(1, rootPath)) || form
         // If array field, remove the value and the reaction will take care of the rest
-        if (parent[keys.itemField]) parent.value.splice(node.field, 1)
+        if (parent[keys.itemField]) {
+          parent.value.splice(node.field, 1)
+          state.errors = spliceErrors(state.errors, parent.path, node.field)
+        }
         // Remove object field
         else {
           node.dispose()
           F.unsetOn(node.field, parent.value)
           F.unsetOn(node.field, parent[keys.fields])
+          // Clean errors for this field and all subfields
+          state.errors = omitByPrefixes([dotPath], state.errors, node.field)
         }
-        // Clean errors for this field and all subfields
-        state.errors = omitByPrefixes([dotPath], state.errors)
       },
     })
     node.path = rootPath
