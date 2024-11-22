@@ -40,11 +40,11 @@ let defaultGetSnapshot = form => F.flattenObject(toJS(gatherFormValues(form)))
 let defaultGetNestedSnapshot = form => F.unflattenObject(form.getSnapshot())
 
 // Splice the form errors when a array item is removed
-const spliceErrors = (errors, parent, nodePosition) => {
-  const parentPath = parent.join('.')
-  const parentLength = parent.length
-  const arrayErrors = pickByPrefixes([parentPath], errors)
-  const newErrors = omitByPrefixes([parentPath], errors)
+const spliceErrors = (errors, parentPath, nodePosition) => {
+  const parent = parentPath.join('.')
+  const parentLength = parentPath.length
+  const arrayErrors = pickByPrefixes([parent], errors)
+  const newErrors = omitByPrefixes([parent], errors)
   for (const [key, value] of Object.entries(arrayErrors)) {
     const keyFields = key.split('.')
     const idx = parseInt(keyFields[parentLength])
