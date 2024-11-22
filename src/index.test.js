@@ -200,6 +200,76 @@ describe('Methods and computeds', () => {
     })
   })
 
+  it('errors on remove array item', () => {
+    const value = {
+      location: {
+        'country.state': { zip: '07016' },
+        addresses: [
+          { street: 'Meridian0', tenants: ['John00', 'John01', 'John02'] },
+          { street: 'Meridian1', tenants: ['John1'] },
+          { street: 'Meridian2', tenants: ['John20', 'John21', 'John22'] },
+          { street: 'Meridian3', tenants: ['John30', 'John31'] },
+        ],
+      },
+    }
+    const fields = {
+      location: {
+        fields: {
+          'country.state': {
+            label: 'Dotted field name',
+            fields: {
+              zip: {
+                validator: () => 'Invalid zip',
+              },
+              name: {},
+            },
+          },
+          addresses: {
+            label: 'Array field',
+            itemField: {
+              label: 'Item field is a record',
+              fields: {
+                street: {},
+                tenants: {
+                  label: 'Array field',
+                  itemField: {
+                    label: 'Item field is a primitive',
+                    validator: arg => `Invalid tenant ${arg}`,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    }
+    form = Form({ fields, value })
+    form.validate()
+    expect(_.size(form.errors)).toBe(10)
+
+    const tenentKey = 'location.addresses.2.tenants.1'
+    expect(form.errors[tenentKey]).toBe('Invalid tenant John21')
+    form.getField(tenentKey).remove()
+    expect(form.errors['location.addresses.2.tenants.0']).toBe(
+      'Invalid tenant John20'
+    )
+    // tenants.2 has moved up to tenants.1
+    expect(form.getField(tenentKey).value).toBe('John22')
+    expect(form.errors['location.addresses.2.tenants.1']).toBe(
+      'Invalid tenant John22'
+    )
+    expect(form.errors['location.addresses.2.tenants.2']).toBeUndefined()
+
+    const addressKey = 'location.addresses.1'
+    form.getField(addressKey).remove()
+    // address.2 has moved up to address.1
+    expect(form.getField('location.addresses.1.tenants.0').value).toBe('John20')
+    expect(form.errors['location.addresses.2.tenants.1']).toBe(
+      'Invalid tenant John31'
+    )
+    expect(form.errors['location.addresses.2.tenants.2']).toBeUndefined()
+  })
+
   describe('validate()', () => {
     it('field', () => {
       let name = form.getField('location.addresses.0.tenants.0')
